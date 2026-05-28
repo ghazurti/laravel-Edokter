@@ -185,6 +185,32 @@ class Form extends Component
         }
     }
 
+    public function ambilDariCppt()
+    {
+        try {
+            $cppt = DB::table('pemeriksaan_ralan')
+                ->where('no_rawat', $this->no_rawat)
+                ->orderBy('tgl_perawatan', 'desc')->orderBy('jam_rawat', 'desc')
+                ->first();
+            if (!$cppt) { $this->alert('warning', 'Data CPPT tidak ditemukan'); return; }
+            $this->keluhan_utama    = $cppt->keluhan;
+            $this->riwayat_alergi   = $cppt->alergi;
+            $this->fisik_td         = $cppt->tensi;
+            $this->fisik_nadi       = $cppt->nadi;
+            $this->fisik_suhu       = $cppt->suhu_tubuh;
+            $this->fisik_rr         = $cppt->respirasi;
+            $this->fisik_bb         = $cppt->berat;
+            $this->fisik_tb         = $cppt->tinggi;
+            $this->fisik_gcs        = $cppt->gcs;
+            $this->fisik_kesadaran  = $cppt->kesadaran;
+            $this->diagnosis        = $cppt->penilaian;
+            $this->instruksi_medis  = $cppt->rtl;
+            $this->alert('success', 'Data CPPT berhasil diambil', ['timer' => 2000, 'toast' => true, 'position' => 'top-right']);
+        } catch (\Exception $e) {
+            $this->alert('error', 'Gagal mengambil data CPPT');
+        }
+    }
+
     public function simpan()
     {
         $data = [

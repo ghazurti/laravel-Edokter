@@ -1,7 +1,8 @@
 <div>
+    @php $imgUrl = !empty($data->gambar) ? 'http://127.0.0.1/webapps/photopasien/'.$data->gambar : null; @endphp
     <x-adminlte-profile-widget name="{{$data->nm_pasien ?? '-'}}" desc="{{$data->no_rkm_medis ?? '-'}}"
         theme="lightblue" layout-type="classic"
-        img="https://simrs.rsbhayangkaranganjuk.com/webapps/photopasien/{{$data->gambar ?? 'avatar.png'}}">
+        :img="$imgUrl">
         <x-adminlte-profile-row-item icon="fas fa-fw fa-book-medical" title="No Rawat"
             text="{{$data->no_rawat ?? '-'}}" />
         <x-adminlte-profile-row-item icon="fas fa-fw fa-id-card" title="No KTP" text="{{$data->no_ktp ?? '-'}}" />
@@ -111,12 +112,46 @@
             max-width: 100%;
         }
     }
+    .widget-user-image .img-circle[src=""] ,
+    .widget-user-image .img-circle:not([src]) {
+        display: none;
+    }
+    .profile-avatar-placeholder {
+        width: 90px;
+        height: 90px;
+        border-radius: 50%;
+        background: rgba(255,255,255,0.3);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: -45px auto 0;
+        border: 3px solid #fff;
+    }
+    .profile-avatar-placeholder i {
+        font-size: 3rem;
+        color: #fff;
+    }
 </style>
 @endpush
 
 @push('js')
 {{-- <script src="//cdn.jsdelivr.net/npm/sweetalert2@11"></script> --}}
 <script>
+    // Fallback avatar icon jika foto tidak ada atau gagal load
+    $(document).ready(function() {
+        var $img = $('.widget-user-image .img-circle');
+        if ($img.length) {
+            $img.on('error', function() {
+                $(this).replaceWith('<div class="profile-avatar-placeholder"><i class="fas fa-user"></i></div>');
+            });
+            if ($img[0].complete && $img[0].naturalWidth === 0) {
+                $img.trigger('error');
+            }
+        } else {
+            $('.widget-user-image').html('<div class="profile-avatar-placeholder"><i class="fas fa-user"></i></div>');
+        }
+    });
+
     $('#btn-phone').on('click', function(event){
         event.preventDefault();
         var phone = $('#data-phone').text();
@@ -137,7 +172,7 @@
             form_data.append('no_rawat', '{{$data->no_rawat}}');
             form_data.append('url', '{{url()->current()}}');
             $.ajax({
-                url: "https://simrs.rsbhayangkaranganjuk.com/webapps/edokterfile.php",
+                url: "http://127.0.0.1/webapps/edokterfile.php",
                 type: "POST",
                 data: form_data,
                 contentType: false,
@@ -233,7 +268,7 @@
                     if(data.status == 'success'){
                         let decode = decodeURIComponent(data.data.lokasi_pdf);
                         var html = '';
-                        html += '<iframe src="http://simrs.rsbhayangkaranganjuk.com/webapps/medrec/'+decode+'" frameborder="0" height="700px" width="100%"></iframe>';
+                        html += '<iframe src="http://127.0.0.1/webapps/medrec/'+decode+'" frameborder="0" height="700px" width="100%"></iframe>';
                         $('.container-retensi').html(html);
                         $('#modalBerkasRetensi').modal('show');
                     }else{
@@ -272,7 +307,7 @@
                         var html = '';
                         data.data.forEach(function(item){
                             let decoded = decodeURIComponent(item.lokasi_file);
-                            html += '<iframe src="https://simrs.rsbhayangkaranganjuk.com/webapps/berkasrawat/'+decoded+'" frameborder="0" height="700px" width="100%"></iframe>';
+                            html += '<iframe src="http://127.0.0.1/webapps/berkasrawat/'+decoded+'" frameborder="0" height="700px" width="100%"></iframe>';
                             
                         });
                         $('.body-modal-berkasrm').html(html);

@@ -15,7 +15,7 @@ return [
     |
     */
 
-    'paths' => ['api/*', 'sanctum/csrf-cookie', 'https://simrs.rsbhayangkaranganjuk.com'],
+    'paths' => ['api/*', 'sanctum/csrf-cookie', 'http://127.0.0.1'],
 
     'allowed_methods' => ['*'],
 

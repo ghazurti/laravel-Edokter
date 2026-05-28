@@ -1,5 +1,12 @@
 <div>
     <form wire:submit.prevent='simpan'>
+        <div class="row mb-2">
+            <div class="col-12">
+                <button type="button" wire:click="ambilDariCppt" class="btn btn-info btn-sm">
+                    <i class="fas fa-sync-alt"></i> Ambil dari CPPT
+                </button>
+            </div>
+        </div>
         <div class="row">
             <div class="col-6 col-md-6">
                 <x-ui.input-datetime label="Tanggal" id="tanggal_bedahmulut" model="tanggal" />
