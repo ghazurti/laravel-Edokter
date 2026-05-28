@@ -23,11 +23,36 @@
                         $config["responsive"] = true;
                     @endphp
                     {{-- Minimal example / fill data using the component slot --}}
+                    @php
+                        $poliAsesmen = [
+                            'U0025' => ['class' => 'btn-awal-medis',                  'label' => 'Penilaian Awal Medis Umum'],
+                            'U0011' => ['class' => 'btn-awal-tht',                    'label' => 'Penilaian Awal Medis THT'],
+                            'U0002' => ['class' => 'btn-awal-anak',                   'label' => 'Penilaian Awal Medis Bayi/Anak'],
+                            'U0001' => ['class' => 'btn-awal-kandungan',              'label' => 'Penilaian Awal Medis Kandungan'],
+                            'U0003' => ['class' => 'btn-awal-dalam',                  'label' => 'Penilaian Awal Medis Penyakit Dalam'],
+                            'U0027' => ['class' => 'btn-awal-psikiatri',              'label' => 'Penilaian Awal Medis Psikiatri'],
+                            'U0004' => ['class' => 'btn-awal-bedah',                  'label' => 'Penilaian Awal Medis Bedah'],
+                            'U0026' => ['class' => 'btn-awal-bedah',                  'label' => 'Penilaian Awal Medis Bedah'],
+                            'U0030' => ['class' => 'btn-awal-orthopedi',              'label' => 'Penilaian Awal Medis Bedah Ortopedi'],
+                            'U0007' => ['class' => 'btn-awal-neurologi',              'label' => 'Penilaian Awal Medis Neurologi'],
+                            'U0008' => ['class' => 'btn-awal-paru',                   'label' => 'Penilaian Awal Medis Paru'],
+                            'U0012' => ['class' => 'btn-awal-jantung',                'label' => 'Penilaian Awal Medis Jantung'],
+                            'U0006' => ['class' => 'btn-awal-kulitdankelamin',        'label' => 'Penilaian Awal Medis Kulit & Kelamin'],
+                            'U0005' => ['class' => 'btn-awal-mata',                   'label' => 'Penilaian Awal Medis Mata'],
+                            'U0009' => ['class' => 'btn-awal-urologi',                'label' => 'Penilaian Awal Medis Urologi'],
+                            'U0029' => ['class' => 'btn-awal-geriatri',               'label' => 'Penilaian Awal Medis Geriatri'],
+                            'U0018' => ['class' => 'btn-awal-rehab-medik',            'label' => 'Penilaian Awal Medis Rehab Medik'],
+                            'U0022' => ['class' => 'btn-awal-bedah-mulut',            'label' => 'Penilaian Awal Medis Bedah Mulut'],
+                            'U0023' => ['class' => 'btn-awal-penyakit-mulut',         'label' => 'Penilaian Awal Medis Penyakit Mulut'],
+                            'IGDK'  => ['class' => 'btn-awal-gawat-darurat-psikiatri','label' => 'Penilaian Awal Medis Gawat Darurat Psikiatri'],
+                        ];
+                        $asesmen = $poliAsesmen[$kd_poli] ?? ['class' => 'btn-awal-medis', 'label' => 'Penilaian Awal Medis Umum'];
+                    @endphp
                     <x-adminlte-datatable id="tablePasienRalan" :heads="$heads" :config="$config" head-theme="dark" striped hoverable bordered compressed>
                         @foreach($data as $row)
                             <tr @if(!empty($row->diagnosa_utama)) class="bg-success" @endif >
                                 <td>{{$row->no_reg}}</td>
-                                <td> 
+                                <td>
                                     @php
                                     $noRawat = App\Http\Controllers\Ralan\PasienRalanController::encryptData($row->no_rawat);
                                     $noRM = App\Http\Controllers\Ralan\PasienRalanController::encryptData($row->no_rkm_medis);
@@ -37,17 +62,9 @@
                                     </a>
                                 </td>
                                 <td>
-                                    <div class="dropdown">
-                                        <button id="my-dropdown" class="btn btn-secondary dropdown-toggle" data-toggle="dropdown" aria-expanded="false">{{$row->no_rawat}}</button>
-                                        <div class="dropdown-menu" aria-labelledby="my-dropdown">
-                                            <button id="{{$row->no_rawat}}" class="dropdown-item btn-awal-medis" wire:click="$emit('awalMedis')">Penilaian Awal Medis Umum</button>
-                                            <button id="{{$row->no_rawat}}" class="dropdown-item btn-awal-tht">Penilaian Awal Medis THT</button>
-                                            <button id="{{$row->no_rawat}}" class="dropdown-item btn-awal-anak">Penilaian Awal Medis Bayi/Anak</button>
-                                            <button id="{{$row->no_rawat}}" class="dropdown-item btn-awal-kandungan">Penilaian Awal Medis Kandungan</button>
-                                            <button id="{{$row->no_rawat}}" class="dropdown-item btn-awal-dalam">Penilaian Awal Medis Penyakit Dalam</button>
-                                            <button id="{{$row->no_rawat}}" class="dropdown-item btn-awal-psikiatri">Penilaian Awal Medis Psikiatri</button>
-                                        </div>
-                                    </div>
+                                    <button id="{{$row->no_rawat}}" class="btn btn-sm btn-secondary {{ $asesmen['class'] }}">
+                                        {{ $row->no_rawat }}
+                                    </button>
                                 </td>
                                 <td>{{$row->no_tlp}}</td>
                                 <td>{{$row->nm_dokter}}</td>
@@ -123,11 +140,62 @@
     <x-adminlte-modal wire:ignore.self id="modal-awal-medis-psikiatri" title="Penilaian Awal Medis Psikiatri" size="xl" v-centered static-backdrop scrollable>
         <livewire:component.awal-psikiatri.form-psikiatri  />
     </x-adminlte-modal>
+
+    <x-adminlte-modal wire:ignore.self id="modal-awal-medis-bedah" title="Penilaian Awal Medis Bedah" size="xl" v-centered static-backdrop scrollable>
+        <livewire:component.awal-bedah.form />
+    </x-adminlte-modal>
+
+    <x-adminlte-modal wire:ignore.self id="modal-awal-medis-neurologi" title="Penilaian Awal Medis Neurologi" size="xl" v-centered static-backdrop scrollable>
+        <livewire:component.awal-neurologi.form />
+    </x-adminlte-modal>
+
+    <x-adminlte-modal wire:ignore.self id="modal-awal-medis-orthopedi" title="Penilaian Awal Medis Bedah Ortopedi" size="xl" v-centered static-backdrop scrollable>
+        <livewire:component.awal-orthopedi.form />
+    </x-adminlte-modal>
+
+    <x-adminlte-modal wire:ignore.self id="modal-awal-medis-paru" title="Penilaian Awal Medis Paru" size="xl" v-centered static-backdrop scrollable>
+        <livewire:component.awal-paru.form />
+    </x-adminlte-modal>
+
+    <x-adminlte-modal wire:ignore.self id="modal-awal-medis-jantung" title="Penilaian Awal Medis Jantung" size="xl" v-centered static-backdrop scrollable>
+        <livewire:component.awal-jantung.form />
+    </x-adminlte-modal>
+
+    <x-adminlte-modal wire:ignore.self id="modal-awal-medis-kulitdankelamin" title="Penilaian Awal Medis Kulit &amp; Kelamin" size="xl" v-centered static-backdrop scrollable>
+        <livewire:component.awal-kulitdankelamin.form />
+    </x-adminlte-modal>
+
+    <x-adminlte-modal wire:ignore.self id="modal-awal-medis-mata" title="Penilaian Awal Medis Mata" size="xl" v-centered static-backdrop scrollable>
+        <livewire:component.awal-mata.form />
+    </x-adminlte-modal>
+
+    <x-adminlte-modal wire:ignore.self id="modal-awal-medis-urologi" title="Penilaian Awal Medis Urologi" size="xl" v-centered static-backdrop scrollable>
+        <livewire:component.awal-urologi.form />
+    </x-adminlte-modal>
+
+    <x-adminlte-modal wire:ignore.self id="modal-awal-medis-geriatri" title="Penilaian Awal Medis Geriatri" size="xl" v-centered static-backdrop scrollable>
+        <livewire:component.awal-geriatri.form />
+    </x-adminlte-modal>
+
+    <x-adminlte-modal wire:ignore.self id="modal-awal-medis-rehab-medik" title="Penilaian Awal Medis Rehab Medik" size="xl" v-centered static-backdrop scrollable>
+        <livewire:component.awal-rehab-medik.form />
+    </x-adminlte-modal>
+
+    <x-adminlte-modal wire:ignore.self id="modal-awal-medis-bedah-mulut" title="Penilaian Awal Medis Bedah Mulut" size="xl" v-centered static-backdrop scrollable>
+        <livewire:component.awal-bedah-mulut.form />
+    </x-adminlte-modal>
+
+    <x-adminlte-modal wire:ignore.self id="modal-awal-medis-penyakit-mulut" title="Penilaian Awal Medis Penyakit Mulut" size="xl" v-centered static-backdrop scrollable>
+        <livewire:component.awal-penyakit-mulut.form />
+    </x-adminlte-modal>
+
+    <x-adminlte-modal wire:ignore.self id="modal-awal-medis-gawat-darurat-psikiatri" title="Penilaian Awal Medis Gawat Darurat Psikiatri" size="xl" v-centered static-backdrop scrollable>
+        <livewire:component.awal-gawat-darurat-psikiatri.form />
+    </x-adminlte-modal>
 @stop
 
 @section('plugins.TempusDominusBs4', true)
 @push('js')
 <script>
-    
 </script>
 @endpush

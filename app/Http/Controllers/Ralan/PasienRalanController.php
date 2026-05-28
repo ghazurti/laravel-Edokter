@@ -46,6 +46,7 @@ class PasienRalanController extends Controller
 
         return view('ralan.pasien-ralan', [
             'nm_poli' => $this->getPoliklinik($kd_poli),
+            'kd_poli' => $kd_poli,
             'heads' => $heads,
             'data' => $data,
             'tanggal' => $tanggal,

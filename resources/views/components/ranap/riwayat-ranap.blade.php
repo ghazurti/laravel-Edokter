@@ -249,9 +249,9 @@
                         </x-adminlte-card>
                         @endif
 
-                        <x-adminlte-card theme="dark" title="Laporan Operasi" collapsible="collapsed" maximizable>
+                        {{-- <x-adminlte-card theme="dark" title="Laporan Operasi" collapsible="collapsed" maximizable>
                             <livewire:component.riwayat-operasi :noRawat='$row->no_rawat' />
-                        </x-adminlte-card>
+                        </x-adminlte-card> --}}
                         
                     </div>
                 </div>

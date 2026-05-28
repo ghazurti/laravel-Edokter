@@ -759,8 +759,8 @@ class PemeriksaanRalanController extends Controller
         }
     }
 
-    public static function getTono($noRawat)
-    {
-        return DB::table('pemeriksaan_tono')->where('no_rawat', $noRawat)->first();
-    }
+    //  public static function getTono($noRawat)
+    //  {
+    //      return DB::table('pemeriksaan_tono')->where('no_rawat', $noRawat)->first();
+    //  }
 }

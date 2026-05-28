@@ -437,10 +437,12 @@ class ResepController extends Controller
                 }
             }
 
+            $noRacik = (DB::table('resep_dokter_racikan')->where('no_resep', $noResep)->max('no_racik') ?? 0) + 1;
+
             DB::table('resep_dokter_racikan')
                 ->insert([
                     'no_resep' => $noResep,
-                    'no_racik' => '1',
+                    'no_racik' => $noRacik,
                     'nama_racik' => $namaRacikan,
                     'kd_racik' => $metodeRacikan,
                     'jml_dr' => $jumlahRacikan,
@@ -451,7 +453,7 @@ class ResepController extends Controller
             for ($i = 0; $i < count($kdObat); $i++) {
                 DB::table('resep_dokter_racikan_detail')->insert([
                     'no_resep' => $noResep,
-                    'no_racik' => '1',
+                    'no_racik' => $noRacik,
                     'kode_brng' => $kdObat[$i],
                     'p1' => $p1[$i],
                     'p2' => $p2[$i],
@@ -597,10 +599,12 @@ class ResepController extends Controller
                     'jam_penyerahan' => '00:00:00',
                 ]);
 
+            $noRacik = (DB::table('resep_dokter_racikan')->where('no_resep', $noResep)->max('no_racik') ?? 0) + 1;
+
             DB::table('resep_dokter_racikan')
                 ->insert([
                     'no_resep' => $noResep,
-                    'no_racik' => '1',
+                    'no_racik' => $noRacik,
                     'nama_racik' => $namaRacikan,
                     'kd_racik' => $metodeRacikan,
                     'jml_dr' => $jumlahRacikan,
@@ -611,7 +615,7 @@ class ResepController extends Controller
             for ($i = 0; $i < count($kdObat); $i++) {
                 DB::table('resep_dokter_racikan_detail')->insert([
                     'no_resep' => $noResep,
-                    'no_racik' => '1',
+                    'no_racik' => $noRacik,
                     'kode_brng' => $kdObat[$i],
                     'p1' => $p1[$i],
                     'p2' => $p2[$i],
