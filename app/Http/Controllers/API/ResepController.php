@@ -113,17 +113,6 @@ class ResepController extends Controller
         DB::beginTransaction();
         try {
             if ($status == 'Ralan') {
-                $iter = $request->get('iter');
-                if ($iter != '-') {
-                    DB::table('resep_iter')->upsert(
-                        [
-                            'no_rawat' => $noRawat,
-                            'catatan_iter' => $iter,
-                        ],
-                        ['no_rawat'],
-                        ['catatan_iter']
-                    );
-                }
                 $db = DB::table('set_depo_ralan')->where('kd_poli', $kode)->first();
                 $bangsal = $db->kd_bangsal;
             } else {
@@ -198,6 +187,17 @@ class ResepController extends Controller
                 ->orderBy('resep_obat.jam_peresepan', 'desc')
                 ->get();
             DB::commit();
+
+            $pilihIterasi = $request->get('pilih_iterasi');
+            if ($pilihIterasi && $resep->isNotEmpty()) {
+                try {
+                    DB::table('antrianiterasi')->insertOrIgnore([
+                        'no_resep'     => $resep->first()->no_resep,
+                        'pilihiterasi' => $pilihIterasi,
+                    ]);
+                } catch (\Exception $e) {}
+            }
+
             return response()->json([
                 'status' => 'sukses',
                 'pesan' => 'Input resep berhasil',
@@ -337,6 +337,98 @@ class ResepController extends Controller
         }
     }
 
+    public function postResepIterasi(Request $request, $noRawat)
+    {
+        try {
+            $noRawat = $this->decryptData($noRawat);
+            $noResepAwal = $request->no_resep_awal;
+            $pilihIterasi = $request->pilih_iterasi; // "1. Iterasi 1x" atau "2. Iterasi 2x"
+
+            $resepAwal = DB::table('resep_obat')->where('no_resep', $noResepAwal)->first();
+            if (!$resepAwal) {
+                return response()->json(['status' => 'error', 'pesan' => 'Resep awal tidak ditemukan']);
+            }
+
+            $detailAwal = DB::table('resep_dokter')->where('no_resep', $noResepAwal)->get();
+            $dokter = session()->get('username');
+
+            DB::beginTransaction();
+
+            $jumlahIter = ($pilihIterasi === '2. Iterasi 2x') ? 2 : 1;
+
+            for ($iter = 1; $iter <= $jumlahIter; $iter++) {
+                $lastNo = DB::table('resep_obat')
+                    ->where(function($q) {
+                        $q->whereDate('tgl_perawatan', today())
+                          ->orWhereDate('tgl_peresepan', today());
+                    })
+                    ->selectRaw('IFNULL(MAX(CAST(RIGHT(no_resep,4) AS UNSIGNED)), 0) as no')
+                    ->first();
+                $nextNo = sprintf('%04d', ($lastNo->no + 1));
+                $noResepBaru = now()->format('Ymd') . $nextNo;
+
+                DB::table('resep_obat')->insert([
+                    'no_resep'       => $noResepBaru,
+                    'tgl_perawatan'  => '0000-00-00',
+                    'jam'            => '00:00:00',
+                    'no_rawat'       => $noRawat,
+                    'kd_dokter'      => $dokter,
+                    'tgl_peresepan'  => now()->format('Y-m-d'),
+                    'jam_peresepan'  => now()->format('H:i:s'),
+                    'status'         => $resepAwal->status,
+                    'tgl_penyerahan' => '0000-00-00',
+                    'jam_penyerahan' => '00:00:00',
+                ]);
+
+                foreach ($detailAwal as $detail) {
+                    DB::table('resep_dokter')->insert([
+                        'no_resep'     => $noResepBaru,
+                        'kode_brng'    => $detail->kode_brng,
+                        'jml'          => $detail->jml,
+                        'aturan_pakai' => $detail->aturan_pakai,
+                    ]);
+                }
+
+                $statusIter = ($iter === 1) ? 'Iterasi Ke 1' : 'Iterasi Ke 2';
+                DB::table('permintaan_resep_iterasi_bpjs')->insert([
+                    'no_resep_awal' => $noResepAwal,
+                    'no_resep'      => $noResepBaru,
+                    'status_iter'   => $statusIter,
+                ]);
+            }
+
+            try {
+                DB::table('antrianiterasi')->insert([
+                    'no_resep'     => $noResepAwal,
+                    'pilihiterasi' => $pilihIterasi,
+                ]);
+            } catch (\Exception $e) {
+                // tabel antrianiterasi mungkin tidak ada di semua instalasi
+            }
+
+            DB::commit();
+            return response()->json(['status' => 'sukses', 'pesan' => 'Resep iterasi berhasil disimpan']);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json(['status' => 'error', 'pesan' => $e->getMessage()]);
+        }
+    }
+
+    public function hapusResepIterasi($noResep)
+    {
+        try {
+            DB::beginTransaction();
+            DB::table('permintaan_resep_iterasi_bpjs')->where('no_resep', $noResep)->delete();
+            DB::table('resep_dokter')->where('no_resep', $noResep)->delete();
+            DB::table('resep_obat')->where('no_resep', $noResep)->delete();
+            DB::commit();
+            return response()->json(['status' => 'sukses']);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json(['status' => 'error', 'pesan' => $e->getMessage()]);
+        }
+    }
+
     public function postResepRacikan(Request $request, $noRawat)
     {
         $input = $request->all();
@@ -462,6 +554,17 @@ class ResepController extends Controller
                 ]);
             }
             DB::commit();
+
+            $pilihIterasi = $request->get('pilih_iterasi');
+            if ($pilihIterasi && $noResep) {
+                try {
+                    DB::table('antrianiterasi')->insertOrIgnore([
+                        'no_resep'     => $noResep,
+                        'pilihiterasi' => $pilihIterasi,
+                    ]);
+                } catch (\Exception $e) {}
+            }
+
             return response()->json(['status' => 'sukses', 'message' => 'Racikan berhasil ditambahkan']);
 
             // $cek = DB::table('resep_obat')

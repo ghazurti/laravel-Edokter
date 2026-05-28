@@ -47,6 +47,8 @@ Route::get('/hasil/kel/{noRawat}', [ResumePasienController::class, 'getKeluhanUt
 
 Route::get('/obat/{kdObat}', [ResepController::class, 'getDataObat']);
 Route::get('/jns_perawatan_lab', [LabController::class, 'getPerawatanLab']);
+Route::post('/resep/iterasi/{noRawat}', [ResepController::class, 'postResepIterasi']);
+Route::delete('/resep/iterasi/{noResep}', [ResepController::class, 'hapusResepIterasi']);
 Route::post('/resep/racikan/{noRawat}', [ResepController::class, 'postResepRacikan']);
 Route::post('ranap/resep/racikan/{noRawat}', [ResepController::class, 'postResepRacikanRanap']);
 

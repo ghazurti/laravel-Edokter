@@ -279,13 +279,6 @@ class PemeriksaanRalanController extends Controller
         // }
 
         try {
-            if ($iter != '-') {
-                $insert = DB::table('resep_iter')->upsert([
-                    'no_rawat' => $noRawat,
-                    'catatan_iter' => $iter,
-                ], ['no_rawat'], ['catatan_iter']);
-            }
-
             for ($i = 0; $i < count($resObat); $i++) {
                 $obat = $resObat[$i];
                 $jml = $resJml[$i];

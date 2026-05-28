@@ -14,19 +14,20 @@ class RujukInternalPasien extends Controller
     public function __construct(Request $request)
     {
         $this->middleware('loginauth');
+        $this->middleware('decrypt');
         $this->encryptNoRawat = $request->get('no_rawat');
-        $this->noRawat = $this->decryptData($request->get('no_rawat'));
-        $this->noRM = $this->decryptData($request->get('no_rm'));
-        // dd($this->noRM);
+        $this->noRawat = $request->get('no_rawat');
+        $this->noRM = $request->get('no_rm');
     }
     
-    public function index()
+    public function index(Request $request)
     {
+        $noRawat = $request->get('no_rawat');
         return view('ralan.rujuk-internal-pasien',[
-            'noRawat' => $this->noRawat, 
-            'noRM' => $this->noRM, 
-            'rujukan' => $this->getRujukanInternal($this->noRawat), 
-            'regPeriksa' => $this->getRegPeriksa($this->noRawat),
+            'noRawat' => $noRawat,
+            'noRM' => $request->get('no_rm'),
+            'rujukan' => $this->getRujukanInternal($noRawat),
+            'regPeriksa' => $this->getRegPeriksa($noRawat),
             'encryptNoRawat' => $this->encryptNoRawat,
         ]);
     }

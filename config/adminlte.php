@@ -283,17 +283,6 @@ return [
             'url'        => '/ranap/pasien',
         ],
         [
-            'text'        => 'Template Operasi',
-            'url'         => '/master-operasi',
-            'icon'        => 'fas fa-fw fa-stethoscope',
-        ],
-        [
-            'text'        => 'Master Obat',
-            'url'         => '/master_obat',
-            'icon'        => 'fas fa-fw fa-pills',
-            'label_color' => 'success',
-        ],
-        [
             'text'        => 'Keluar',
             'url'         => '/logout',
             'icon'        => 'fas fa-fw fa-sign-out-alt',

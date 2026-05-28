@@ -129,10 +129,6 @@ Route::delete('/ranap/obat/{noResep}/{kdObat}', [
 ]);
 
 // Route menu Ralan
-Route::get('/master_obat', [
-    App\Http\Controllers\MasterObat::class,
-    'index',
-])->name('master_obat');
 Route::get('/berkas/{noRawat}/{noRM}', [
     App\Http\Controllers\Ralan\PemeriksaanRalanController::class,
     'getBerkasRM',
@@ -182,10 +178,6 @@ Route::post('/diagnosa', [
     App\Http\Controllers\API\ResumePasienController::class,
     'simpanDiagnosa',
 ])->name('diagnosa.simpan');
-
-Route::get('/master-operasi', fn () => view('master-laporan-operasi'))->name(
-    'master-operasi'
-)->middleware('loginauth');
 
 Route::get('/pegawai', [App\Http\Controllers\API\PemeriksaanController::class, 'getPegawai'])->name('pegawai');
 

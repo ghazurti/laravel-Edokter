@@ -31,13 +31,10 @@
                                 placeholder="Aturan Pakai" />
                         </div>
                     </div>
-                    <div class="row justify-content-end">
-                        <x-adminlte-select-bs id="iter" name="iter" fgroup-class="col-md-4 my-auto"
-                            data-placeholder="Pilih Iter">
-                            <option value="-">Pilih jumlah iter</option>
-                            <option value="1">1</option>
-                            <option value="2">2</option>
-                            </x-adminlte-select>
+                    <div class="row justify-content-end align-items-center">
+                        <div id="iterasi-badge" class="col-auto d-none">
+                            <span class="badge badge-warning px-2 py-1" id="iterasi-badge-text"></span>
+                        </div>
                             <x-adminlte-button id="addFormResep" class="md:col-md-1 sm:col-sm-6 add-form-resep"
                                 theme="success" label="+" />
                             <x-adminlte-button id="resepButton" class="md:col-md-2 sm:col-sm-6 ml-1" theme="primary"
@@ -129,6 +126,38 @@
                     </x-slot> --}}
                 </x-adminlte-datatable>
             </x-adminlte-callout>
+
+            @if(count($resepIterasi) > 0)
+            <x-adminlte-callout theme="info" title="Riwayat Resep Iterasi">
+                <div class="table-responsive">
+                    <table class="table table-sm table-striped table-bordered">
+                        <thead class="thead-dark">
+                            <tr>
+                                <th>No. Resep Awal</th>
+                                <th>No. Resep Iterasi</th>
+                                <th>Status</th>
+                                <th>Tanggal</th>
+                                <th>Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach($resepIterasi as $ri)
+                            <tr>
+                                <td>{{ $ri->no_resep_awal }}</td>
+                                <td>{{ $ri->no_resep }}</td>
+                                <td><span class="badge badge-info">{{ $ri->status_iter }}</span></td>
+                                <td>{{ $ri->tgl_peresepan }} {{ $ri->jam_peresepan }}</td>
+                                <td>
+                                    <button class="btn btn-danger btn-sm"
+                                        onclick="hapusResepIterasi('{{ $ri->no_resep }}', event)">Hapus</button>
+                                </td>
+                            </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            </x-adminlte-callout>
+            @endif
 
         </div>
         <div class="tab-pane fade" id="copyresep" role="tabpanel" aria-labelledby="copyresep-tab">
@@ -273,6 +302,7 @@
             </x-adminlte-callout>
             @endif
         </div>
+
     </div>
 </div>
 
@@ -848,15 +878,14 @@
             let obat = getValue('obat[]');
             let jumlah = getValue('jumlah[]');
             let aturan = getValue('aturan[]');
-            let iter = $('#iter').val();
             var form = $("#resepForm");
             var data = {
                 obat:obat,
                 jumlah:jumlah,
                 aturan_pakai:aturan,
-                iter:iter,
                 status:'Ralan',
                 kode:"{{$poli}}",
+                pilih_iterasi:currentIterasi,
                 _token:_token,
             };
             var url = form.attr('action');
@@ -890,6 +919,8 @@
                             showConfirmButton: false,
 
                         })
+                        currentIterasi = null;
+                        setIterasiBadge(null);
                         $('.body-resep').empty();
                         $.each(response.data, function (i, item) {
                             var trHTML = '';
@@ -901,7 +932,7 @@
                             trHTML += '<td><button class="btn btn-danger btn-sm" onclick="hapusObat(\''+item.no_resep+'\', \''+item.kode_brng+'\', event)">Hapus</button></td>';
                             trHTML += '</tr>';
                             $('.body-resep').append(trHTML);
-                        }); 
+                        });
                     }
                     else{
                         Swal.fire({
@@ -953,6 +984,7 @@
                     kandungan:kandungan,
                     jml:jml,
                     satu_resep:satu_resep,
+                    pilih_iterasi:currentIterasi,
                     _token:_token,
                 },
                 dataType: 'json',
@@ -1137,6 +1169,92 @@
             let noResep = $(this).attr('data-target');
             hapusObatBatch(noResep, listObat);
         })
+
+        var currentIterasi = null;
+
+        function setIterasiBadge(value) {
+            if (value) {
+                $('#iterasi-badge-text').text('Iterasi BPJS: ' + value);
+                $('#iterasi-badge').removeClass('d-none');
+            } else {
+                $('#iterasi-badge').addClass('d-none');
+                $('#iterasi-badge-text').text('');
+            }
+        }
+
+        function tanyaJumlahIterasi() {
+            Swal.fire({
+                title: 'Pilih Jumlah Iterasi',
+                icon: 'question',
+                showDenyButton: true,
+                showCancelButton: true,
+                confirmButtonText: '1. Iterasi 1x',
+                denyButtonText: '2. Iterasi 2x',
+                cancelButtonText: 'Batal',
+                allowOutsideClick: false,
+                allowEscapeKey: false,
+            }).then(function(res) {
+                if (res.isConfirmed) {
+                    currentIterasi = '1. Iterasi 1x';
+                } else if (res.isDenied) {
+                    currentIterasi = '2. Iterasi 2x';
+                } else {
+                    currentIterasi = null;
+                }
+                setIterasiBadge(currentIterasi);
+            });
+        }
+
+        function showIterasiQuestion() {
+            Swal.fire({
+                title: 'Resep Dokter',
+                text: 'Apakah resep ini merupakan Resep Iterasi BPJS?',
+                icon: 'question',
+                showDenyButton: true,
+                confirmButtonText: 'Ya, Iterasi BPJS',
+                denyButtonText: 'Tidak, Resep Biasa',
+                allowOutsideClick: false,
+                allowEscapeKey: false,
+            }).then(function(result) {
+                if (result.isConfirmed) {
+                    tanyaJumlahIterasi();
+                } else {
+                    currentIterasi = null;
+                    setIterasiBadge(null);
+                }
+            });
+        }
+
+        $(document).ready(function() {
+            showIterasiQuestion();
+        });
+
+
+        function hapusResepIterasi(noResep, e) {
+            e.preventDefault();
+            Swal.fire({
+                title: 'Hapus Resep Iterasi?', icon: 'warning',
+                showCancelButton: true, confirmButtonText: 'Ya, Hapus!', cancelButtonText: 'Batal'
+            }).then((result) => {
+                if (result.value) {
+                    $.ajax({
+                        url: '/api/resep/iterasi/' + noResep,
+                        type: 'DELETE',
+                        dataType: 'json',
+                        data: { _token: '{{ csrf_token() }}' },
+                        success: function(response) {
+                            if (response.status == 'sukses') {
+                                Swal.fire({ title: 'Terhapus', icon: 'success', timer: 2000, showConfirmButton: false })
+                                    .then(() => window.location.reload());
+                            } else {
+                                Swal.fire('Gagal', response.pesan ?? 'Gagal menghapus', 'error');
+                            }
+                        },
+                        error: function() { Swal.fire('Error', 'Terjadi kesalahan', 'error'); }
+                    });
+                }
+            });
+        }
 
 </script>
 

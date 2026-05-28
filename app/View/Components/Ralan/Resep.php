@@ -9,7 +9,7 @@ use Illuminate\View\Component;
 
 class Resep extends Component
 {
-    public $heads, $riwayatPeresepan, $resep, $dokter, $noRM, $noRawat, $encryptNoRawat, $encryptNoRM, $dataMetodeRacik;
+    public $heads, $riwayatPeresepan, $resep, $dokter, $noRM, $noRawat, $encryptNoRawat, $encryptNoRM, $dataMetodeRacik, $resepIterasi;
     /**
      * Create a new component instance.
      *
@@ -43,6 +43,20 @@ class Resep extends Component
 
         $this->dataMetodeRacik = DB::table('metode_racik')
             ->get();
+
+        $this->resepIterasi = DB::table('permintaan_resep_iterasi_bpjs')
+            ->join('resep_obat as ra', 'permintaan_resep_iterasi_bpjs.no_resep_awal', '=', 'ra.no_resep')
+            ->join('resep_obat as ri', 'permintaan_resep_iterasi_bpjs.no_resep', '=', 'ri.no_resep')
+            ->where('ra.no_rawat', $this->noRawat)
+            ->select(
+                'permintaan_resep_iterasi_bpjs.no_resep_awal',
+                'permintaan_resep_iterasi_bpjs.no_resep',
+                'permintaan_resep_iterasi_bpjs.status_iter',
+                'ri.tgl_peresepan',
+                'ri.jam_peresepan'
+            )
+            ->orderBy('ri.tgl_peresepan', 'desc')
+            ->get();
     }
 
     /**
@@ -62,6 +76,7 @@ class Resep extends Component
             'poli' => session()->get('kd_poli'),
             'dataMetodeRacik' => $this->dataMetodeRacik,
             'resepRacikan' => $this->getResepRacikan($this->noRM, session()->get('username')),
+            'resepIterasi' => $this->resepIterasi,
         ]);
     }
 
