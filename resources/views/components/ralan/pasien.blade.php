@@ -60,8 +60,14 @@
             </span>
         </div>
         <span class="nav-link">
+            <div class="form-group mb-2">
+                <label class="small mb-1 text-muted">Kategori Berkas</label>
+                <select id="kategoriBerkas" class="form-control form-control-sm">
+                    {{-- diisi via JS dari /berkas/kategori --}}
+                </select>
+            </div>
             <x-adminlte-input-file id="fileupload" name="fileupload" igroup-size="sm" accept="image/*,application/pdf"
-                placeholder="Berkas Digital" legend="Pilih">
+                placeholder="Pilih file..." legend="Pilih">
                 <x-slot name="appendSlot">
                     <x-adminlte-button theme="primary" onclick="uploadFile()" label="Upload" />
                 </x-slot>
@@ -165,38 +171,63 @@
         $('#data-phone').text(event);
     });
 
+    // Load kategori berkas saat halaman siap
+    $(document).ready(function () {
+        $.get('/berkas/kategori', function (res) {
+            if (res && res.status && Array.isArray(res.data)) {
+                var $sel = $('#kategoriBerkas').empty();
+                res.data.forEach(function (k) {
+                    $sel.append('<option value="' + k.kode + '">' + k.nama + '</option>');
+                });
+            }
+        });
+    });
+
     function uploadFile() {
-            var file_data = $('#fileupload').prop('files')[0];
-            var form_data = new FormData();
-            form_data.append('file', file_data);
-            form_data.append('no_rawat', '{{$data->no_rawat}}');
-            form_data.append('url', '{{url()->current()}}');
-            $.ajax({
-                url: "http://127.0.0.1/webapps/edokterfile.php",
-                type: "POST",
-                data: form_data,
-                contentType: false,
-                cache: false,
-                processData: false,
-                success: function (data) {
-                    console.log(data);
-                    Swal.fire({
-                        title: data.status ? 'Sukses' : 'Gagal',
-                        text: data.message ?? 'Berkas berhasil diupload',
-                        icon: data.status ? 'success' : 'error',
-                        confirmButtonText: 'OK'
-                    })
-                },
-                error: function (data) {
-                    Swal.fire({
-                        title: 'Gagal',
-                        text: data.message ?? 'Berkas berhasil diupload',
-                        icon: 'error',
-                        confirmButtonText: 'OK'
-                    })
-                }
-            });
+        var file_data = $('#fileupload').prop('files')[0];
+        if (!file_data) {
+            Swal.fire({ title: 'Pilih file', text: 'Silakan pilih file dulu', icon: 'warning' });
+            return;
         }
+        var form_data = new FormData();
+        form_data.append('file', file_data);
+        form_data.append('no_rawat', '{{$data->no_rawat}}');
+        form_data.append('kode', $('#kategoriBerkas').val() || 'B00');
+
+        Swal.fire({
+            title: 'Mengupload...',
+            allowOutsideClick: false,
+            didOpen: function () { Swal.showLoading(); }
+        });
+
+        $.ajax({
+            url: '{{ route("berkas.upload") }}',
+            type: 'POST',
+            data: form_data,
+            headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
+            contentType: false,
+            cache: false,
+            processData: false,
+            success: function (data) {
+                Swal.close();
+                Swal.fire({
+                    title: data.status ? 'Sukses' : 'Gagal',
+                    text: data.message ?? 'Berkas berhasil diupload',
+                    icon: data.status ? 'success' : 'error',
+                    confirmButtonText: 'OK'
+                });
+                if (data.status) {
+                    $('#fileupload').val('');
+                    if (typeof getBerkasRM === 'function') getBerkasRM();
+                }
+            },
+            error: function (xhr) {
+                Swal.close();
+                var msg = (xhr.responseJSON && xhr.responseJSON.message) || 'Upload gagal';
+                Swal.fire({ title: 'Gagal', text: msg, icon: 'error', confirmButtonText: 'OK' });
+            }
+        });
+    }
 
         $('#icare-button').on('click', function(event){
             event.preventDefault();

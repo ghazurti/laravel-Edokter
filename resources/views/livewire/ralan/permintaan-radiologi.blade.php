@@ -13,21 +13,21 @@
     <div class="card-body">
         <form wire:submit.prevent="savePermintaanRadiologi">
             <div class="form-group row">
-                <label for="klinis" class="col-sm-4 col-form-label">Klinis</label>
+                <label for="klinis_rad" class="col-sm-4 col-form-label">Klinis</label>
                 <div class="col-sm-8">
-                <input type="text" class="form-control" wire:model.defer="klinis" id="klinis" name="klinis" />
+                <input type="text" class="form-control" wire:model.defer="klinis" id="klinis_rad" name="klinis" />
                 @error('klinis') <span class="text-danger">{{ $message }}</span> @enderror
                 </div>
             </div>
             <div class="form-group row">
-                <label for="info" class="col-sm-4 col-form-label">Info Tambahan</label>
+                <label for="info_rad" class="col-sm-4 col-form-label">Info Tambahan</label>
                 <div class="col-sm-8">
-                <input type="text" class="form-control" wire:model.defer="info" id="info" name="info" />
+                <input type="text" class="form-control" wire:model.defer="info" id="info_rad" name="info" />
                 @error('info') <span class="text-danger">{{ $message }}</span> @enderror
                 </div>
             </div>
             <div wire:ignore class="form-group row">
-                <label for="jenis" class="col-sm-4 col-form-label">Jenis Pemeriksaan</label>
+                <label for="jenis_rad" class="col-sm-4 col-form-label">Jenis Pemeriksaan</label>
                 <div class="col-sm-8">
                 <select class="form-control jenis" wire:model.defer="jns_pemeriksaan" id="jenis_rad" name="jenis[]" multiple="multiple" ></select>
                 @error('jns_pemeriksaan') <span class="text-danger">{{ $message }}</span> @enderror

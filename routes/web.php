@@ -137,6 +137,14 @@ Route::get('/berkas-retensi/{noRawat}', [
     App\Http\Controllers\Ralan\PemeriksaanRalanController::class,
     'getBerkasRetensi',
 ]);
+Route::post('/berkas/upload', [
+    App\Http\Controllers\Ralan\PemeriksaanRalanController::class,
+    'uploadBerkas',
+])->name('berkas.upload');
+Route::get('/berkas/kategori', [
+    App\Http\Controllers\Ralan\PemeriksaanRalanController::class,
+    'getKategoriBerkas',
+]);
 Route::get('/ralan/poli', [
     App\Http\Controllers\Ralan\PemeriksaanRalanController::class,
     'getPoli',
@@ -157,6 +165,36 @@ Route::put('/ralan/rujuk-internal/update/{noRawat}', [
     App\Http\Controllers\Ralan\PemeriksaanRalanController::class,
     'updateRujukanInternal',
 ])->name('ralan.rujuk-internal.update');
+
+// Route menu IGD
+Route::get('/igd/pasien', [
+    App\Http\Controllers\Igd\PasienIgdController::class,
+    'index',
+])->name('igd.pasien');
+Route::get('/igd/pemeriksaan', [
+    App\Http\Controllers\Igd\PemeriksaanIgdController::class,
+    'index',
+])->name('igd.pemeriksaan');
+Route::post('/igd/simpan/resep/{noRawat}', [
+    App\Http\Controllers\Ralan\PemeriksaanRalanController::class,
+    'postResep',
+])->name('igd.simpan.resep');
+Route::post('/igd/simpan/racikan/{noRawat}', [
+    App\Http\Controllers\Ralan\PemeriksaanRalanController::class,
+    'postResepRacikan',
+])->name('igd.simpan.racikan');
+Route::post('/igd/simpan/copyresep/{noRawat}', [
+    App\Http\Controllers\Ralan\PemeriksaanRalanController::class,
+    'postCopyResep',
+])->name('igd.simpan.copyresep');
+Route::delete('/igd/obat/{noResep}/{kdObat}', [
+    App\Http\Controllers\Ralan\PemeriksaanRalanController::class,
+    'hapusObat',
+]);
+Route::delete('/igd/racikan/{noResep}/{noRacik}', [
+    App\Http\Controllers\Ralan\PemeriksaanRalanController::class,
+    'hapusObatRacikan',
+]);
 
 // Route menu booking
 Route::get('/booking', [

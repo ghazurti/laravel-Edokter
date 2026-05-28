@@ -1226,7 +1226,9 @@
         }
 
         $(document).ready(function() {
+            @if(!$sudahAdaResepHariIni && $poli !== 'IGDK' && !$isRujukanIntern)
             showIterasiQuestion();
+            @endif
         });
 
 

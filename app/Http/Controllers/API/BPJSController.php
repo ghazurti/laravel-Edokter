@@ -16,9 +16,25 @@ class BPJSController extends Controller
         $dokter = DB::table('maping_dokter_dpjpvclaim')
             ->where('kd_dokter', $input['kodedokter'])
             ->first();
-        $data['param'] = $input['param'];
+
+        if (!$dokter || empty($dokter->kd_dokter_bpjs)) {
+            \Log::warning('[ICare] Dokter belum mapping', ['kd_dokter' => $input['kodedokter']]);
+            return response()->json([
+                'code'    => 400,
+                'message' => 'Dokter ' . $input['kodedokter'] . ' belum di-mapping ke kode dokter BPJS di tabel maping_dokter_dpjpvclaim',
+            ]);
+        }
+
+        $data['param']      = $input['param'];
         $data['kodedokter'] = intval($dokter->kd_dokter_bpjs);
+
+        \Log::info('[ICare] Request', [
+            'url'  => env('BPJS_ICARE_BASE_URL') . 'api/rs/validate',
+            'body' => $data,
+        ]);
+
         $response = $this->requestPostBpjs('api/rs/validate', $data);
+        \Log::info('[ICare] Response', ['body' => $response->getContent()]);
         return $response;
     }
 }

@@ -197,5 +197,28 @@
 @section('plugins.TempusDominusBs4', true)
 @push('js')
 <script>
+    // Auto-redirect ke tanggal hari ini (Asia/Makassar / WITA) kalau page kelewat hari
+    (function () {
+        const pageDate = '{{ $tanggal }}';
+        function todayStr() {
+            // pakai TZ Asia/Makassar terlepas dari device user
+            const parts = new Intl.DateTimeFormat('en-CA', {
+                timeZone: 'Asia/Makassar', year: 'numeric', month: '2-digit', day: '2-digit'
+            }).formatToParts(new Date());
+            const get = (t) => parts.find(p => p.type === t).value;
+            return `${get('year')}-${get('month')}-${get('day')}`;
+        }
+        function check() {
+            if (pageDate !== todayStr()) {
+                const url = new URL(window.location.href);
+                url.searchParams.set('tanggal', todayStr());
+                window.location.href = url.toString();
+            }
+        }
+        setInterval(check, 60 * 1000);
+        document.addEventListener('visibilitychange', function () {
+            if (!document.hidden) check();
+        });
+    })();
 </script>
 @endpush

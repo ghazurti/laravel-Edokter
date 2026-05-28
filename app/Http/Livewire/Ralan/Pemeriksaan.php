@@ -122,6 +122,10 @@ class Pemeriksaan extends Component
                     'nip' => session()->get('username'),
                 ]);
 
+            DB::table('reg_periksa')
+                ->where('no_rawat', $this->noRawat)
+                ->update(['stts' => 'Sudah']);
+
             DB::commit();
             $this->getListPemeriksaan();
             // $this->dispatchBrowserEvent('swal:pemeriksaan', $this->toastResponse('Pemeriksaan berhasil ditambahkan'));

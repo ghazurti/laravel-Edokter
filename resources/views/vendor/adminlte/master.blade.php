@@ -34,6 +34,7 @@
     @include('adminlte::plugins', ['type' => 'css'])
 
     <link rel="stylesheet" href="{{ asset('vendor/adminlte/dist/css/adminlte.min.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/rsud-theme.css') }}">
 
     @if(config('adminlte.google_fonts.allowed', true))
     <link rel="stylesheet"
@@ -110,11 +111,12 @@
     @endif
     <x-livewire-alert::scripts />
 
-    <script src="{{ asset('/sw.js') }}"></script>
     <script>
-        if (!navigator.serviceWorker.controller) {
+        if ('serviceWorker' in navigator && !navigator.serviceWorker.controller) {
             navigator.serviceWorker.register("/sw.js").then(function (reg) {
-                console.log("Service worker has been registered for scope: " + reg.scope);
+                console.log("Service worker registered for scope: " + reg.scope);
+            }).catch(function (err) {
+                console.log("Service worker registration failed:", err);
             });
         }
     </script>

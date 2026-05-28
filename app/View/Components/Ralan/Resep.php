@@ -9,7 +9,7 @@ use Illuminate\View\Component;
 
 class Resep extends Component
 {
-    public $heads, $riwayatPeresepan, $resep, $dokter, $noRM, $noRawat, $encryptNoRawat, $encryptNoRM, $dataMetodeRacik, $resepIterasi;
+    public $heads, $riwayatPeresepan, $resep, $dokter, $noRM, $noRawat, $encryptNoRawat, $encryptNoRM, $dataMetodeRacik, $resepIterasi, $sudahAdaResepHariIni, $isRujukanIntern;
     /**
      * Create a new component instance.
      *
@@ -41,8 +41,19 @@ class Resep extends Component
             ->select('resep_dokter.no_resep', 'resep_dokter.kode_brng', 'resep_dokter.jml', 'databarang.nama_brng', 'resep_dokter.aturan_pakai', 'resep_dokter.no_resep', 'databarang.nama_brng', 'resep_obat.tgl_peresepan', 'resep_obat.jam_peresepan')
             ->get();
 
+        $this->sudahAdaResepHariIni = $this->resep->contains(function ($item) {
+            return substr($item->tgl_peresepan, 0, 10) === date('Y-m-d');
+        });
+
         $this->dataMetodeRacik = DB::table('metode_racik')
             ->get();
+
+        // Cek: dokter login berbeda dengan dokter utama di reg_periksa
+        // → dia adalah dokter penerima rujukan internal (konsul), jangan tampilkan notif iterasi
+        $dokterUtama = DB::table('reg_periksa')
+            ->where('no_rawat', $this->noRawat)
+            ->value('kd_dokter');
+        $this->isRujukanIntern = $dokterUtama && $dokterUtama !== $this->dokter;
 
         $this->resepIterasi = DB::table('permintaan_resep_iterasi_bpjs')
             ->join('resep_obat as ra', 'permintaan_resep_iterasi_bpjs.no_resep_awal', '=', 'ra.no_resep')
@@ -77,6 +88,8 @@ class Resep extends Component
             'dataMetodeRacik' => $this->dataMetodeRacik,
             'resepRacikan' => $this->getResepRacikan($this->noRM, session()->get('username')),
             'resepIterasi' => $this->resepIterasi,
+            'sudahAdaResepHariIni' => $this->sudahAdaResepHariIni,
+            'isRujukanIntern' => $this->isRujukanIntern,
         ]);
     }
 

@@ -137,14 +137,14 @@ return [
     */
 
     'classes_body' => '',
-    'classes_brand' => '',
+    'classes_brand' => 'navbar-rsud-brand',
     'classes_brand_text' => '',
     'classes_content_wrapper' => '',
     'classes_content_header' => '',
     'classes_content' => '',
-    'classes_sidebar' => 'sidebar-dark-primary elevation-4',
+    'classes_sidebar' => 'sidebar-dark-success elevation-4 sidebar-rsud',
     'classes_sidebar_nav' => '',
-    'classes_topnav' => 'navbar-primary navbar-dark',
+    'classes_topnav' => 'navbar-success navbar-dark navbar-rsud',
     'classes_topnav_nav' => 'navbar-expand',
     'classes_topnav_container' => 'container',
 
@@ -261,32 +261,36 @@ return [
             'text' => 'search',
         ],
         [
-            'text'        => 'Home',
+            'text'        => 'Dashboard',
             'url'         => '/home',
-            'icon'        => 'fas fa-fw fa-home',
+            'icon'        => 'fas fa-fw fa-tachometer-alt',
             'label_color' => 'success',
         ],
         [
-            'text'        => 'Booking',
-            'url'         => '/booking',
-            'icon'        => 'fas fa-fw fa-book',
-            'label_color' => 'success',
-        ],
-        [
-            'text'        => 'Ralan',
-            'icon'        => 'fas fa-fw fa-stethoscope',
+            'text'        => 'Rawat Jalan',
+            'icon'        => 'fas fa-fw fa-notes-medical',
             'url'         => '/ralan/pasien',
+            'poli'        => 'NON_IGD',
         ],
         [
-            'text'       => 'Ranap',
-            'icon'       => 'fas fa-fw fa-bed',
+            'text'       => 'Rawat Inap',
+            'icon'       => 'fas fa-fw fa-procedures',
             'url'        => '/ranap/pasien',
+            'poli'       => 'NON_IGD',
+        ],
+        [
+            'text'        => 'IGD',
+            'icon'        => 'fas fa-fw fa-ambulance',
+            'url'         => '/igd/pasien',
+            'poli'        => 'IGDK',
+            'label_color' => 'danger',
+            'label'       => '24/7',
         ],
         [
             'text'        => 'Keluar',
             'url'         => '/logout',
-            'icon'        => 'fas fa-fw fa-sign-out-alt',
-            'label_color' => 'success',
+            'icon'        => 'fas fa-fw fa-power-off',
+            'label_color' => 'danger',
         ],
     ],
 
@@ -303,6 +307,7 @@ return [
     */
 
     'filters' => [
+        App\Menu\Filters\PoliFilter::class,
         JeroenNoten\LaravelAdminLte\Menu\Filters\GateFilter::class,
         JeroenNoten\LaravelAdminLte\Menu\Filters\HrefFilter::class,
         JeroenNoten\LaravelAdminLte\Menu\Filters\SearchFilter::class,

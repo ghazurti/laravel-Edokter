@@ -11,6 +11,14 @@
         </div>
     </div>
     <div class="card-body">
+        <div class="d-flex justify-content-end mb-2">
+            <button type="button" wire:click="autoFillFromKhanza" wire:loading.attr="disabled"
+                class="btn btn-outline-success btn-sm">
+                <i class="fas fa-magic mr-1"></i>
+                <span wire:loading.remove wire:target="autoFillFromKhanza">Ambil Otomatis dari Pemeriksaan / Lab / Radiologi</span>
+                <span wire:loading wire:target="autoFillFromKhanza">Mengambil data...</span>
+            </button>
+        </div>
         <form wire:submit.prevent="simpanResume">
             <div class="row mb-3">
                 <div class="col-md-6">
@@ -39,9 +47,9 @@
             </div>
             <div class="row">
                 <div class="form-group col-md-12">
-                    <label for="keluhan">Keluhan Utama</label>
+                    <label for="keluhan_resume">Keluhan Utama</label>
                     <div class="input-group">
-                        <textarea type="text" rows="3" class="form-control" wire:model.lazy="keluhan" id="keluhan" name="keluhan" ></textarea>
+                        <textarea type="text" rows="3" class="form-control" wire:model.lazy="keluhan" id="keluhan_resume" name="keluhan" ></textarea>
                         <div class="input-group-append">
                             <button type="button" class="btn btn-primary" wire:click="getKeluhanUtama" wire:loading.attr='disabled'>
                             <i class="fas fa-paperclip"></i>     
@@ -212,8 +220,8 @@
             </div>
             <div class="row">
                 <div class="form-group col-md-12">
-                    <label for="alergi">Alergi Obat</label>
-                    <input type="text" class="form-control" wire:model.defer='alergi' id="alergi" name="alergi" >
+                    <label for="alergi_resume">Alergi Obat</label>
+                    <input type="text" class="form-control" wire:model.defer='alergi' id="alergi_resume" name="alergi" >
                     @error('alergi') <span class="text-danger">{{ $message }}</span> @enderror
                 </div>
             </div>
@@ -240,8 +248,8 @@
                 </div>
             </div>
             <div class="form-group">
-                <label for="instruksi">Instruksi/Anjuran Dan Edukasi (Follow Up)</label>
-                <textarea type="text" rows="3" class="form-control" wire:model.defer='instruksi' id="instruksi" name="instruksi" ></textarea>
+                <label for="instruksi_resume">Instruksi/Anjuran Dan Edukasi (Follow Up)</label>
+                <textarea type="text" rows="3" class="form-control" wire:model.defer='instruksi' id="instruksi_resume" name="instruksi" ></textarea>
             </div>
             <div class="form-group">
                 <label>Keadaan Pulang</label>

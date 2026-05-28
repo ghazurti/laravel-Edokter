@@ -23,7 +23,6 @@ trait BpjsTraits
                 'X-signature' => $this->createSign($xTimestamp, env('BPJS_CONS_ID')),
                 'user_key' => env('BPJS_USER_KEY'),
             ])->get(env('BPJS_ICARE_BASE_URL') . $suburl);
-            dd($res);
             return $this->responseDataBpjs($res->json(), $xTimestamp);
         } catch (\Exception $e) {
 
@@ -37,14 +36,26 @@ trait BpjsTraits
     {
         try {
             $xTimestamp = $this->craeteTimestamp();
+            $url = env('BPJS_ICARE_BASE_URL') . $suburl;
             $res = Http::timeout(60)->accept('application/json')->withHeaders([
                 'X-cons-id' => env('BPJS_CONS_ID'),
                 'X-timestamp' => $xTimestamp,
                 'X-signature' => $this->createSign($xTimestamp, env('BPJS_CONS_ID')),
                 'user_key' => env('BPJS_USER_KEY'),
-            ])->post(env('BPJS_ICARE_BASE_URL') . $suburl, $request);
-            // dd($res->json());
-            return $this->responseDataBpjs($res->json(), $xTimestamp);
+            ])->post($url, $request);
+
+            $json = $res->json();
+            if (!is_array($json) || !isset($json['metaData'])) {
+                \Log::error('[BPJS] Non-JSON response', [
+                    'url' => $url, 'status' => $res->status(), 'body' => $res->body()
+                ]);
+                return response()->json([
+                    'code'    => $res->status(),
+                    'message' => 'BPJS endpoint tidak merespon JSON (' . $res->status() . '). Cek BPJS_ICARE_BASE_URL.',
+                    'raw'     => substr($res->body(), 0, 500),
+                ], 200);
+            }
+            return $this->responseDataBpjs($json, $xTimestamp);
         } catch (\Exception $e) {
             $statusError['flag'] = 'RSB Middleware Webservice';
             $statusError['result'] = 'Communication Errors With BPJS Kesehatan Webservice';

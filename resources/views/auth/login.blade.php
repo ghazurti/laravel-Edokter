@@ -1,9 +1,6 @@
 {{-- @extends('adminlte::auth.login') --}}
 @extends('adminlte::auth.auth-page', ['auth_type' => 'login'])
 
-@section('adminlte_css_pre')
-    <link rel="stylesheet" href="{{ asset('vendor/icheck-bootstrap/icheck-bootstrap.min.css') }}">
-@stop
 
 @php( $login_url = View::getSection('login_url') ?? config('adminlte.login_url', 'login') )
 @php( $register_url = View::getSection('register_url') ?? config('adminlte.register_url', 'register') )
@@ -83,13 +80,13 @@
                 </button>
             </div>
         </div>
-        <div class="row">
-            <b>NB:</b>
-                <ol>
-                    <li>Login Menggunakan User NIP DOKTER</li>
-                    <li>Pilih POLIKLINIK Sesuai Spesialis</li>
-                    <li>Sesi Login 30 Menit auto logout ketika tidak ada transaksi</li>
-                </ol>
+        <div class="login-nb">
+            <b><i class="fas fa-info-circle mr-1"></i> CATATAN</b>
+            <ol>
+                <li>Login menggunakan <strong>NIP Dokter</strong></li>
+                <li>Pilih <strong>Poliklinik</strong> sesuai spesialis</li>
+                <li>Sesi login 30 menit, auto-logout jika tidak ada transaksi</li>
+            </ol>
         </div>
 
     </form>

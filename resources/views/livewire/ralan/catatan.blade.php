@@ -1,6 +1,6 @@
 <div @if($isCollapsed) class="card card-info collapsed-card" @else class="card card-info" @endif>
     <div class="card-header">
-        <h3 class="card-title"><i class="fas fa-lg fa-receipt mr-1"></i> Catatan Pasien </h3>
+        <h3 class="card-title"><i class="fas fa-lg fa-clipboard-list mr-1"></i> Catatan Pasien </h3>
         <div class="card-tools">
             {{-- <button type="button" wire:click="collapsed" class="btn btn-tool" data-card-widget="maximize" >
                 <i class="fas fa-lg fa-expand"></i>     

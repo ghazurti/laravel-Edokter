@@ -458,6 +458,10 @@ class PemeriksaanRalanController extends Controller
             ->insert($data);
 
         if ($insert) {
+            DB::table('reg_periksa')
+                ->where('no_rawat', Request::get('no_rawat'))
+                ->update(['stts' => 'Sudah']);
+
             return response()->json([
                 'status' => 'success',
                 'message' => 'Data berhasil disimpan'
@@ -576,6 +580,109 @@ class PemeriksaanRalanController extends Controller
                 'message' => $e->getMessage()
             ], 500);
         }
+    }
+
+    /**
+     * Upload berkas digital perawatan.
+     * Replikasi Khanza HYBRIDWEB edokterfile.php — file disimpan di
+     * public/berkasrawat/pages/upload/{no_rawat}/ supaya path kompatibel
+     * dengan instalasi Khanza desktop yang sudah ada.
+     */
+    public function uploadBerkas(\Illuminate\Http\Request $request)
+    {
+        try {
+            $validated = $request->validate([
+                'file'     => 'required|file|max:10240|mimes:jpg,jpeg,png,pdf,gif,webp',
+                'no_rawat' => 'required|string',
+                'kode'     => 'nullable|string|max:10',
+            ]);
+
+            $noRawat = $request->no_rawat;
+            $kode    = $request->kode ?: 'B00';
+
+            // Path upload mengikuti struktur Khanza: htdocs/webapps/berkasrawat/pages/upload/{no_rawat}/
+            // - BERKAS_UPLOAD_PATH = path absolut htdocs/webapps/berkasrawat/pages/upload (di env).
+            // - Kalau tidak di-set, fallback ke public/webapps/berkasrawat/pages/upload/ Laravel.
+            $safeFolder  = str_replace('/', '-', $noRawat);
+            $basePath    = env('BERKAS_UPLOAD_PATH');
+            $relativeDir = 'webapps/berkasrawat/pages/upload/' . $safeFolder;
+            if ($basePath) {
+                $absoluteDir = rtrim($basePath, '/\\') . DIRECTORY_SEPARATOR . $safeFolder;
+                $lokasiRel   = 'berkasrawat/pages/upload/' . $safeFolder . '/'; // path relatif ala Khanza (tanpa webapps/ karena base sudah di htdocs/webapps)
+            } else {
+                $absoluteDir = public_path($relativeDir);
+                $lokasiRel   = null; // pakai relativeDir lengkap (Laravel local)
+            }
+            if (!is_dir($absoluteDir)) {
+                mkdir($absoluteDir, 0775, true);
+            }
+
+            $file = $request->file('file');
+            $ext  = $file->getClientOriginalExtension();
+            $filename = date('YmdHis') . '_' . uniqid() . '.' . $ext;
+            $file->move($absoluteDir, $filename);
+
+            $lokasi = $lokasiRel
+                ? $lokasiRel . $filename
+                : $relativeDir . '/' . $filename;
+
+            DB::table('berkas_digital_perawatan')->insert([
+                'no_rawat'    => $noRawat,
+                'kode'        => $kode,
+                'tgl_posting' => now(),
+                'nip'         => session('username') ?? '',
+                'lokasi_file' => $lokasi,
+            ]);
+
+            return response()->json([
+                'status'  => true,
+                'message' => 'Berkas berhasil diupload',
+                'lokasi'  => $lokasi,
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'status'  => false,
+                'message' => collect($e->errors())->flatten()->first() ?: 'File tidak valid',
+            ], 422);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status'  => false,
+                'message' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Master kategori berkas digital (KTP, KK, Hasil Lab, dll).
+     * Ambil dari tabel master_kategori_perawatan kalau ada, kalau tidak
+     * fallback ke daftar default sesuai Khanza standard.
+     */
+    public function getKategoriBerkas()
+    {
+        try {
+            $data = DB::table('master_kategori_perawatan')->select('kode', 'nama')->get();
+            if ($data->isNotEmpty()) {
+                return response()->json(['status' => true, 'data' => $data]);
+            }
+        } catch (\Exception $e) {
+            // tabel tidak ada, pakai fallback
+        }
+
+        $default = [
+            ['kode' => 'B00', 'nama' => 'Umum'],
+            ['kode' => 'B01', 'nama' => 'KTP / Identitas'],
+            ['kode' => 'B02', 'nama' => 'Kartu Keluarga'],
+            ['kode' => 'B03', 'nama' => 'Kartu BPJS'],
+            ['kode' => 'B04', 'nama' => 'Surat Rujukan'],
+            ['kode' => 'B05', 'nama' => 'Hasil Lab'],
+            ['kode' => 'B06', 'nama' => 'Hasil Radiologi'],
+            ['kode' => 'B07', 'nama' => 'Hasil EKG'],
+            ['kode' => 'B08', 'nama' => 'Resep / Salinan Resep'],
+            ['kode' => 'B09', 'nama' => 'Informed Consent'],
+            ['kode' => 'B10', 'nama' => 'Surat Keterangan Sakit'],
+            ['kode' => 'B11', 'nama' => 'Lainnya'],
+        ];
+        return response()->json(['status' => true, 'data' => $default]);
     }
 
     public function getBerkasRetensi($noRawat)

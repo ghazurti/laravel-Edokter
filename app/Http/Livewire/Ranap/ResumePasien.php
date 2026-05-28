@@ -58,6 +58,143 @@ class ResumePasien extends Component
         $this->getDiagnosa();
         // $this->getPerawatan();
         $this->getDiagnosaAwal();
+        $this->autoFillFromKhanza();
+    }
+
+    /**
+     * Auto-isi field resume dari data pemeriksaan, lab, radiologi, operasi, obat
+     * (port dari Khanza desktop RMDataResumePasienRanap.java)
+     * Hanya mengisi field yang masih kosong agar tidak menimpa input dokter.
+     */
+    public function autoFillFromKhanza()
+    {
+        // 0. Diagnosa & Prosedur (utama + sekunder)
+        $this->getDiagnosa();
+        $this->getProsedur();
+
+        // 1. Keluhan, Pemeriksaan Fisik, Jalannya Penyakit, Alergi dari pemeriksaan_ranap
+        $pem = DB::table('pemeriksaan_ranap')
+            ->where('no_rawat', $this->noRawat)
+            ->selectRaw("
+                GROUP_CONCAT(DISTINCT keluhan ORDER BY tgl_perawatan,jam_rawat SEPARATOR '\n') as keluhan,
+                GROUP_CONCAT(DISTINCT pemeriksaan ORDER BY tgl_perawatan,jam_rawat SEPARATOR '\n') as pemeriksaan,
+                GROUP_CONCAT(DISTINCT penilaian ORDER BY tgl_perawatan,jam_rawat SEPARATOR '\n') as penilaian,
+                GROUP_CONCAT(DISTINCT alergi ORDER BY tgl_perawatan,jam_rawat SEPARATOR ', ') as alergi
+            ")
+            ->first();
+        if ($pem) {
+            if (empty($this->keluhan) && !empty($pem->keluhan))         $this->keluhan = $pem->keluhan;
+            if (empty($this->fisik) && !empty($pem->pemeriksaan))       $this->fisik = $pem->pemeriksaan;
+            if (empty($this->perawatan) && !empty($pem->penilaian))     $this->perawatan = $pem->penilaian;
+            if (empty($this->alergi) && !empty($pem->alergi))           $this->alergi = $pem->alergi;
+        }
+
+        // 2. Hasil Lab
+        if (empty($this->lab)) {
+            $lab = DB::table('detail_periksa_lab')
+                ->join('periksa_lab', function ($j) {
+                    $j->on('detail_periksa_lab.no_rawat', '=', 'periksa_lab.no_rawat')
+                      ->on('detail_periksa_lab.kd_jenis_prw', '=', 'periksa_lab.kd_jenis_prw')
+                      ->on('detail_periksa_lab.tgl_periksa', '=', 'periksa_lab.tgl_periksa')
+                      ->on('detail_periksa_lab.jam', '=', 'periksa_lab.jam');
+                })
+                ->join('template_laboratorium', 'detail_periksa_lab.id_template', '=', 'template_laboratorium.id_template')
+                ->where('detail_periksa_lab.no_rawat', $this->noRawat)
+                ->where('detail_periksa_lab.nilai', '<>', '')
+                ->selectRaw("GROUP_CONCAT(CONCAT(template_laboratorium.Pemeriksaan,' : ',detail_periksa_lab.nilai) ORDER BY periksa_lab.tgl_periksa,periksa_lab.jam,detail_periksa_lab.id_template SEPARATOR ', ') as hasil")
+                ->value('hasil');
+            if ($lab) $this->lab = $lab;
+        }
+
+        // 3. Hasil Radiologi
+        if (empty($this->penunjang)) {
+            $rad = DB::table('hasil_radiologi')
+                ->join('periksa_radiologi', function ($j) {
+                    $j->on('hasil_radiologi.no_rawat', '=', 'periksa_radiologi.no_rawat')
+                      ->on('hasil_radiologi.tgl_periksa', '=', 'periksa_radiologi.tgl_periksa')
+                      ->on('hasil_radiologi.jam', '=', 'periksa_radiologi.jam');
+                })
+                ->join('jns_perawatan_radiologi', 'periksa_radiologi.kd_jenis_prw', '=', 'jns_perawatan_radiologi.kd_jenis_prw')
+                ->where('hasil_radiologi.no_rawat', $this->noRawat)
+                ->where('hasil_radiologi.hasil', '<>', '')
+                ->selectRaw("GROUP_CONCAT(CONCAT(jns_perawatan_radiologi.nm_perawatan,': ',hasil_radiologi.hasil) ORDER BY hasil_radiologi.tgl_periksa,hasil_radiologi.jam SEPARATOR '\n') as hasil")
+                ->value('hasil');
+            if ($rad) $this->penunjang = $rad;
+        }
+
+        // 4. Tindakan & Operasi
+        if (empty($this->operasi)) {
+            $parts = [];
+            $tindakan = DB::table('rawat_inap_dr')
+                ->join('jns_perawatan_inap', 'rawat_inap_dr.kd_jenis_prw', '=', 'jns_perawatan_inap.kd_jenis_prw')
+                ->where('rawat_inap_dr.no_rawat', $this->noRawat)
+                ->selectRaw("GROUP_CONCAT(DISTINCT jns_perawatan_inap.nm_perawatan ORDER BY rawat_inap_dr.tgl_perawatan SEPARATOR ', ') as tindakan")
+                ->value('tindakan');
+            if ($tindakan) $parts[] = $tindakan;
+
+            $op = DB::table('operasi')
+                ->join('paket_operasi', 'operasi.kode_paket', '=', 'paket_operasi.kode_paket')
+                ->where('operasi.no_rawat', $this->noRawat)
+                ->selectRaw("GROUP_CONCAT(DISTINCT paket_operasi.nm_perawatan ORDER BY operasi.tgl_operasi SEPARATOR ', ') as operasi")
+                ->value('operasi');
+            if ($op) $parts[] = $op;
+
+            if (!empty($parts)) $this->operasi = implode(', ', $parts);
+        }
+
+        // 5. Obat selama di RS dari detail_pemberian_obat
+        if (empty($this->obat)) {
+            $obat = DB::table('detail_pemberian_obat')
+                ->join('databarang', 'detail_pemberian_obat.kode_brng', '=', 'databarang.kode_brng')
+                ->where('detail_pemberian_obat.no_rawat', $this->noRawat)
+                ->selectRaw("GROUP_CONCAT(CONCAT(databarang.nama_brng,' ',detail_pemberian_obat.jml,' ',databarang.kode_sat) SEPARATOR ', ') as obat")
+                ->value('obat');
+            if ($obat) $this->obat = $obat;
+        }
+
+        // 6. Obat pulang dari resep_pulang (port dari Khanza: pakai jml_barang & dosis)
+        if (empty($this->obatPulang)) {
+            try {
+                $obatPulang = DB::table('resep_pulang')
+                    ->join('databarang', 'databarang.kode_brng', '=', 'resep_pulang.kode_brng')
+                    ->where('resep_pulang.no_rawat', $this->noRawat)
+                    ->selectRaw("GROUP_CONCAT(CONCAT(databarang.nama_brng,' ',resep_pulang.jml_barang,' ',resep_pulang.dosis) SEPARATOR ', ') as obat")
+                    ->value('obat');
+                if ($obatPulang) $this->obatPulang = $obatPulang;
+            } catch (\Exception $e) {
+                // tabel resep_pulang mungkin tidak ada di semua instalasi
+            }
+        }
+
+        // 7. Diet dari detail_beri_diet (port dari Khanza)
+        if (empty($this->diet)) {
+            try {
+                $diet = DB::table('detail_beri_diet')
+                    ->join('diet', 'detail_beri_diet.kd_diet', '=', 'diet.kd_diet')
+                    ->where('detail_beri_diet.no_rawat', $this->noRawat)
+                    ->selectRaw("GROUP_CONCAT(DISTINCT diet.nama_diet ORDER BY detail_beri_diet.tanggal SEPARATOR ', ') as diet")
+                    ->value('diet');
+                if ($diet) $this->diet = $diet;
+            } catch (\Exception $e) {
+                // ignore
+            }
+        }
+
+        // 8. Lab pending dari permintaan_lab yang belum ada hasil
+        if (empty($this->labPending)) {
+            try {
+                $labPending = DB::table('permintaan_lab')
+                    ->join('permintaan_detail_permintaan_lab', 'permintaan_detail_permintaan_lab.noorder', '=', 'permintaan_lab.noorder')
+                    ->join('template_laboratorium', 'permintaan_detail_permintaan_lab.id_template', '=', 'template_laboratorium.id_template')
+                    ->where('permintaan_lab.no_rawat', $this->noRawat)
+                    ->where('permintaan_lab.tgl_hasil', '0000-00-00')
+                    ->selectRaw("GROUP_CONCAT(DISTINCT template_laboratorium.Pemeriksaan SEPARATOR ', ') as lab")
+                    ->value('lab');
+                if ($labPending) $this->labPending = $labPending;
+            } catch (\Exception $e) {
+                // ignore
+            }
+        }
     }
 
     public function hydrate()
@@ -132,30 +269,63 @@ class ResumePasien extends Component
 
     public function getProsedur()
     {
-        $prosedur = DB::table('prosedur_pasien')
+        // Port dari Khanza: ambil prosedur prioritas 1-4
+        $rows = DB::table('prosedur_pasien')
             ->join('icd9', 'prosedur_pasien.kode', '=', 'icd9.kode')
             ->where('prosedur_pasien.no_rawat', $this->noRawat)
-            ->where('prosedur_pasien.prioritas', '1')
-            ->where('prosedur_pasien.status', 'Ralan')
-            ->select('icd9.deskripsi_panjang', 'icd9.kode')
-            ->first();
+            ->orderBy('prosedur_pasien.prioritas')
+            ->select('icd9.kode', 'icd9.deskripsi_panjang', 'prosedur_pasien.prioritas')
+            ->get();
 
-        $this->prosedur = $prosedur->deskripsi_panjang ?? '';
-        $this->kdProsedur = $prosedur->kode ?? '';
+        foreach ($rows as $r) {
+            switch ((int) $r->prioritas) {
+                case 1:
+                    if (empty($this->prosedur))  { $this->prosedur  = $r->deskripsi_panjang; $this->kdProsedur  = $r->kode; }
+                    break;
+                case 2:
+                    if (empty($this->prosedur1)) { $this->prosedur1 = $r->deskripsi_panjang; $this->kdProsedur1 = $r->kode; }
+                    break;
+                case 3:
+                    if (empty($this->prosedur2)) { $this->prosedur2 = $r->deskripsi_panjang; $this->kdProsedur2 = $r->kode; }
+                    break;
+                case 4:
+                    if (empty($this->prosedur3)) { $this->prosedur3 = $r->deskripsi_panjang; $this->kdProsedur3 = $r->kode; }
+                    break;
+            }
+        }
     }
 
     public function getDiagnosa()
     {
-        $diagnosa = DB::table('diagnosa_pasien')
-            ->join('icd9', 'diagnosa_pasien.kd_penyakit', '=', 'icd9.kode')
+        // Port dari Khanza: ambil diagnosa prioritas 1-5 (status Ranap, fallback ke Ralan)
+        $rows = DB::table('diagnosa_pasien')
+            ->join('penyakit', 'diagnosa_pasien.kd_penyakit', '=', 'penyakit.kd_penyakit')
             ->where('diagnosa_pasien.no_rawat', $this->noRawat)
-            ->where('diagnosa_pasien.prioritas', '1')
-            ->where('diagnosa_pasien.status', 'Ralan')
-            ->select('icd9.deskripsi_panjang', 'icd9.kode')
-            ->first();
+            ->whereIn('diagnosa_pasien.status', ['Ranap', 'Ralan'])
+            ->orderByRaw("FIELD(diagnosa_pasien.status,'Ranap','Ralan')")
+            ->orderBy('diagnosa_pasien.prioritas')
+            ->select('penyakit.kd_penyakit as kode', 'penyakit.nm_penyakit as nama', 'diagnosa_pasien.prioritas')
+            ->get();
 
-        $this->diagnosa = $diagnosa->deskripsi_panjang ?? '';
-        $this->kdDiagnosa = $diagnosa->kode ?? '';
+        foreach ($rows as $r) {
+            switch ((int) $r->prioritas) {
+                case 1:
+                    if (empty($this->diagnosa))  { $this->diagnosa  = $r->nama; $this->kdDiagnosa  = $r->kode; }
+                    break;
+                case 2:
+                    if (empty($this->diagnosa1)) { $this->diagnosa1 = $r->nama; $this->kdDiagnosa1 = $r->kode; }
+                    break;
+                case 3:
+                    if (empty($this->diagnosa2)) { $this->diagnosa2 = $r->nama; $this->kdDiagnosa2 = $r->kode; }
+                    break;
+                case 4:
+                    if (empty($this->diagnosa3)) { $this->diagnosa3 = $r->nama; $this->kdDiagnosa3 = $r->kode; }
+                    break;
+                case 5:
+                    if (empty($this->diagnosa4)) { $this->diagnosa4 = $r->nama; $this->kdDiagnosa4 = $r->kode; }
+                    break;
+            }
+        }
     }
 
     public function getDiagnosaAwal()
@@ -251,11 +421,11 @@ class ResumePasien extends Component
     public function getDiet()
     {
         $this->listDiet = DB::table('detail_beri_diet')
-            ->join('diet_jenis', 'detail_beri_diet.kd_jenis', '=', 'diet_jenis.kd_jenis')
+            ->join('diet', 'detail_beri_diet.kd_diet', '=', 'diet.kd_diet')
             ->where('detail_beri_diet.no_rawat', $this->noRawat)
             ->orderBy('detail_beri_diet.tanggal', 'desc')
             ->orderBy('detail_beri_diet.waktu', 'desc')
-            ->select('detail_beri_diet.tanggal', 'detail_beri_diet.waktu', 'diet_jenis.nama_jenis as nama_diet')
+            ->select('detail_beri_diet.tanggal', 'detail_beri_diet.waktu', 'diet.nama_diet')
             ->get();
         $this->emit('openDietModal');
     }
