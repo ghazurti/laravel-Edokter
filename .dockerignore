@@ -2,7 +2,7 @@
 .gitignore
 .env
 .env.backup
-.env.example
+# .env.example DIIKUTSERTAKAN ke image supaya entrypoint bisa fallback
 node_modules
 vendor
 storage/logs/*
