@@ -34,7 +34,7 @@ Isi minimal:
 APP_NAME="E-Dokter RSUD"
 APP_ENV=production
 APP_DEBUG=false
-APP_URL=http://172.17.10.4:8080
+APP_URL=http://172.17.10.4:8090
 
 # Database Khanza (server 172.17.10.5)
 DB_CONNECTION=mysql
@@ -97,7 +97,7 @@ docker compose ps
 docker compose exec edokter php artisan tinker --execute='DB::connection()->getPdo();'
 
 # Akses dari browser:
-# http://172.17.10.4:8080
+# http://172.17.10.4:8090
 ```
 
 ## 6. Setup Reverse Proxy di aaPanel (Opsional, untuk domain & HTTPS)
@@ -105,7 +105,7 @@ docker compose exec edokter php artisan tinker --execute='DB::connection()->getP
 aaPanel UI → **Website → Add Site** → buat site `edokter.rsudbaubau.local` (atau IP), lalu:
 
 **Site → Settings → Reverse Proxy**:
-- Target URL: `http://127.0.0.1:8080`
+- Target URL: `http://127.0.0.1:8090`
 - Send Domain: `$host`
 - Enable cache: off (Laravel handle sendiri)
 
