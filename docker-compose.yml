@@ -1,0 +1,29 @@
+services:
+  edokter:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    image: edokter-rsud:latest
+    container_name: edokter-rsud
+    restart: unless-stopped
+    ports:
+      - "8080:80"   # Expose ke host:8080 → akses via http://172.17.10.4:8080
+    env_file:
+      - .env
+    volumes:
+      # Persistent: storage (logs, sessions, cache)
+      - edokter-storage:/var/www/html/storage
+      # Berkas digital pasien — share dengan Khanza via NFS/SMB kalau perlu
+      - ./public/webapps:/var/www/html/public/webapps
+    extra_hosts:
+      # Supaya container bisa akses 172.17.10.5 sebagai "khanza-db"
+      - "khanza-db:172.17.10.5"
+    networks:
+      - rsud-net
+
+volumes:
+  edokter-storage:
+
+networks:
+  rsud-net:
+    driver: bridge
