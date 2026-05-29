@@ -33,27 +33,23 @@ class LoginController extends Controller
         $userKey = env('KHANZA_AES_USER_KEY', 'nur');
         $passKey = env('KHANZA_AES_PASS_KEY', 'windi');
 
-        // PARAMETERIZED — anti SQL injection
-        $cek = DB::table('user')
-            ->join('dokter', 'dokter.kd_dokter', '=', DB::raw('AES_DECRYPT(id_user, ?)'))
-            ->whereRaw('id_user = AES_ENCRYPT(?, ?)', [$request->username, $userKey])
-            ->selectRaw('AES_DECRYPT(id_user, ?) as id_user, AES_DECRYPT(password, ?) as password', [$userKey, $passKey])
-            ->addBinding($userKey, 'join')
-            ->first();
+        // Parameterized + bandingkan di SQL (AES_DECRYPT kembalikan binary,
+        // compare di PHP rawan beda encoding)
+        $cek = DB::selectOne(
+            'SELECT AES_DECRYPT(id_user, ?) AS id_user
+             FROM user
+             WHERE id_user = AES_ENCRYPT(?, ?)
+               AND password = AES_ENCRYPT(?, ?)
+             LIMIT 1',
+            [$userKey, $request->username, $userKey, $request->password, $passKey]
+        );
 
         if (!$cek) {
-            return back()->withErrors(['message' => 'User tidak ditemukan']);
+            return back()->withErrors(['message' => 'NIP atau password salah']);
         }
 
-        // Constant-time compare cegah timing attack
-        if (!hash_equals((string) $cek->password, (string) $request->password)) {
-            return back()->withErrors(['message' => 'Password salah']);
-        }
-
-        // Regenerate session ID cegah session fixation
         $request->session()->regenerate();
 
-        // JANGAN simpan password di session
         session([
             'username' => $cek->id_user,
             'kd_poli'  => $request->poli,
