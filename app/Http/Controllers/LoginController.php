@@ -28,22 +28,38 @@ class LoginController extends Controller
     public function customLogin(Request $request)
     {
         $this->validateLogin($request);
+
+        // AES keys default Khanza, bisa di-override via env
+        $userKey = env('KHANZA_AES_USER_KEY', 'nur');
+        $passKey = env('KHANZA_AES_PASS_KEY', 'windi');
+
+        // PARAMETERIZED — anti SQL injection
         $cek = DB::table('user')
-                    ->join("dokter", "dokter.kd_dokter", "=", DB::Raw("AES_DECRYPT(id_user, 'nur')"))
-                    ->whereRaw("id_user = AES_ENCRYPT('{$request->username}', 'nur')")
-                    ->selectRaw("AES_DECRYPT(id_user, 'nur') as id_user, AES_DECRYPT(password, 'windi') as password")
-                    ->first();
-        if ($cek) {
-            if($cek->password == $request->password){
-                session(['username' => $cek->id_user, 'password'=>$cek->password, 'kd_poli'=>$request->poli]);
-                return redirect()->intended('home')
-                        ->withSuccess('Signed in');
-            }else{
-                return back()->withErrors(['message' => 'Password salah']);
-            }
+            ->join('dokter', 'dokter.kd_dokter', '=', DB::raw('AES_DECRYPT(id_user, ?)'))
+            ->whereRaw('id_user = AES_ENCRYPT(?, ?)', [$request->username, $userKey])
+            ->selectRaw('AES_DECRYPT(id_user, ?) as id_user, AES_DECRYPT(password, ?) as password', [$userKey, $passKey])
+            ->addBinding($userKey, 'join')
+            ->first();
+
+        if (!$cek) {
+            return back()->withErrors(['message' => 'User tidak ditemukan']);
         }
-  
-        return back()->withErrors(['message' => 'User tidak ditemukan']);
+
+        // Constant-time compare cegah timing attack
+        if (!hash_equals((string) $cek->password, (string) $request->password)) {
+            return back()->withErrors(['message' => 'Password salah']);
+        }
+
+        // Regenerate session ID cegah session fixation
+        $request->session()->regenerate();
+
+        // JANGAN simpan password di session
+        session([
+            'username' => $cek->id_user,
+            'kd_poli'  => $request->poli,
+        ]);
+
+        return redirect()->intended('home')->withSuccess('Signed in');
     }
 
 

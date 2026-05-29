@@ -100,6 +100,21 @@ docker compose exec edokter php artisan tinker --execute='DB::connection()->getP
 # http://172.17.10.4:8090
 ```
 
+## ⚠️ Checklist Security Production
+
+Sebelum buka untuk dokter, **wajib** cek:
+
+- [ ] `APP_ENV=production` di `.env`
+- [ ] `APP_DEBUG=false` di `.env` (penting! kalau true, stack trace error akan expose path & SQL)
+- [ ] `APP_KEY` ter-generate (cek `grep APP_KEY .env` ada base64:xxx)
+- [ ] `DB_PASSWORD` strong (bukan default, bukan `root`/`123456`)
+- [ ] `KHANZA_AES_USER_KEY` dan `KHANZA_AES_PASS_KEY` di-override dari default `nur`/`windi` kalau memungkinkan (sesuaikan dengan setting Khanza Anda)
+- [ ] Firewall server hanya allow port yang perlu (22/80/443/8090)
+- [ ] MySQL Khanza tidak expose ke internet (cek `bind-address`)
+- [ ] HTTPS via Cloudflare Tunnel atau Let's Encrypt kalau akses dari luar LAN
+- [ ] Backup `.env` & DB dijadwalkan
+- [ ] Update Laravel & dependencies berkala: `docker compose exec edokter composer update --no-dev`
+
 ## 6. Setup Reverse Proxy di aaPanel (Opsional, untuk domain & HTTPS)
 
 aaPanel UI → **Website → Add Site** → buat site `edokter.rsudbaubau.local` (atau IP), lalu:
