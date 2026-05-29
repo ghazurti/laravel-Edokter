@@ -16,7 +16,7 @@ class LoginAuth
      */
     public function handle(Request $request, Closure $next)
     {
-        if($request->session()->has('username') && $request->session()->has('password')) {
+        if ($request->session()->has('username') && $request->session()->has('kd_poli')) {
             return $next($request);
         }
         return redirect()->route('login');

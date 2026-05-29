@@ -65,13 +65,13 @@ class HomeController extends Controller
     private function getPoliklinik($kd_poli)
     {
         $poli = DB::table('poliklinik')->where('kd_poli', $kd_poli)->first();
-        return $poli->nm_poli;
+        return $poli->nm_poli ?? '-';
     }
-    
+
     private function getDokter($kd_dokter)
     {
         $dokter = DB::table('dokter')->where('kd_dokter', $kd_dokter)->first();
-        return $dokter->nm_dokter;
+        return $dokter->nm_dokter ?? $kd_dokter;
     }
     
     public function statistikKunjungan($kd_dokter)

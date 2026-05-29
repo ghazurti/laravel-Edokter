@@ -36,12 +36,13 @@ class LoginController extends Controller
         // Parameterized + bandingkan di SQL (AES_DECRYPT kembalikan binary,
         // compare di PHP rawan beda encoding)
         $cek = DB::selectOne(
-            'SELECT AES_DECRYPT(id_user, ?) AS id_user
-             FROM user
-             WHERE id_user = AES_ENCRYPT(?, ?)
-               AND password = AES_ENCRYPT(?, ?)
+            'SELECT AES_DECRYPT(u.id_user, ?) AS id_user
+             FROM user u
+             JOIN dokter d ON d.kd_dokter = AES_DECRYPT(u.id_user, ?)
+             WHERE u.id_user = AES_ENCRYPT(?, ?)
+               AND u.password = AES_ENCRYPT(?, ?)
              LIMIT 1',
-            [$userKey, $request->username, $userKey, $request->password, $passKey]
+            [$userKey, $userKey, $request->username, $userKey, $request->password, $passKey]
         );
 
         if (!$cek) {
