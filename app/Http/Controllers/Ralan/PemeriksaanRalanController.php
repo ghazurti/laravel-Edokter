@@ -6,11 +6,12 @@ use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
 use App\Traits\EnkripsiData;
+use App\Traits\RiwayatPasien;
 use Request;
 
 class PemeriksaanRalanController extends Controller
 {
-    use EnkripsiData;
+    use EnkripsiData, RiwayatPasien;
     public $dokter, $noRawat, $noRM;
     /**
      * Display a listing of the resource.

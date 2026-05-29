@@ -5,11 +5,12 @@ namespace App\Http\Controllers\Ranap;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
 use App\Traits\EnkripsiData;
+use App\Traits\RiwayatPasien;
 use Request;
 
 class PemeriksaanRanapController extends Controller
 {
-    use EnkripsiData;
+    use EnkripsiData, RiwayatPasien;
     public $dokter, $noRawat, $noRM;
     /**
      * Display a listing of the resource.

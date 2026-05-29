@@ -257,11 +257,23 @@
                                 <div class="container">
                                     <div class="row row-cols-auto">
                                         @foreach($gambarRadiologi as $gambar)
-                                        <a href="{{ env('URL_RADIOLOGI').$gambar->lokasi_gambar }}"
-                                            data-toggle="lightbox" data-gallery="example-gallery" class="col-sm-4">
-                                            <img src="{{ env('URL_RADIOLOGI').$gambar->lokasi_gambar }}"
-                                                class="img-fluid" style="width: 200px;height:250px">
-                                        </a>
+                                            @php
+                                                $loc = trim((string) $gambar->lokasi_gambar);
+                                                $isFullUrl = preg_match('/^https?:\/\//i', $loc) === 1;
+                                                $url = $isFullUrl ? $loc : rtrim(env('URL_RADIOLOGI', ''), '/') . '/' . ltrim($loc, '/');
+                                                $isImage = (bool) preg_match('/\.(jpe?g|png|gif|webp|bmp)(\?.*)?$/i', $loc);
+                                            @endphp
+                                            @if($isImage)
+                                            <a href="{{ $url }}" data-toggle="lightbox" data-gallery="example-gallery" class="col-sm-4">
+                                                <img src="{{ $url }}" class="img-fluid" style="width: 200px;height:250px">
+                                            </a>
+                                            @else
+                                            <a href="{{ $url }}" target="_blank" rel="noopener" class="col-sm-4 d-inline-block m-1">
+                                                <div class="btn btn-outline-info">
+                                                    <i class="fas fa-external-link-alt mr-1"></i> Buka Viewer Radiologi
+                                                </div>
+                                            </a>
+                                            @endif
                                         @endforeach
                                     </div>
                                 </div>
@@ -297,8 +309,15 @@
                                     </thead>
                                     <tbody>
                                         @foreach($laboratorium as $lab)
-                                        <tr
-                                            class="@if($lab->keterangan == 'T' || $lab->keterangan == 'H') bg-danger @endif">
+                                        @php
+                                            $ket = strtoupper(trim((string) $lab->keterangan));
+                                            if (!in_array($ket, ['H','T','L','R','N'])) {
+                                                $ket = \App\Helpers\LabKet::auto($lab->nilai, $lab->nilai_rujukan);
+                                            }
+                                            $rowClass = in_array($ket, ['H','T']) ? 'bg-danger text-white'
+                                                : (in_array($ket, ['L','R']) ? 'bg-info text-white' : '');
+                                        @endphp
+                                        <tr class="{{ $rowClass }}">
                                             <td>{{$loop->iteration}}</td>
                                             <td>{{$lab->Pemeriksaan}}</td>
                                             <td>{{$lab->tgl_periksa}}</td>
@@ -306,7 +325,7 @@
                                             <td>{{$lab->nilai}}</td>
                                             <td>{{$lab->satuan}}</td>
                                             <td>{{$lab->nilai_rujukan}}</td>
-                                            <td>{{$lab->keterangan}}</td>
+                                            <td>{{ $ket !== '' ? $ket : ($lab->keterangan ?? '') }}</td>
                                         </tr>
                                         @endforeach
                                     </tbody>
@@ -319,11 +338,11 @@
                             <livewire:component.riwayat-operasi :noRawat='$row->no_rawat' />
                         </x-adminlte-card> --}} -->
 
-                        
-                        <!-- <x-ralan.penilaian-awal-keperawatan :no-rawat="$row->no_rawat" />
-                        <x-ralan.penilaian-awal-keperawatan-gigi-mulut :no-rawat="$row->no_rawat" />
-                        <x-ralan.penilaian-awal-keperawatan-kebidanan :no-rawat="$row->no_rawat" />
-                        <x-ralan.penilaian-awal-keperawatan-bayi :no-rawat="$row->no_rawat" /> -->
+                        @include('partials.riwayat-tambahan', [
+                            'ctrl'     => \App\Http\Controllers\Ralan\PemeriksaanRalanController::class,
+                            'noRawat'  => $row->no_rawat,
+                            'isRanap'  => $row->status_lanjut === 'Ranap',
+                        ])
                     </div>
                 </div>
             </div>
