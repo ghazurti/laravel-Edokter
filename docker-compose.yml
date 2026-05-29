@@ -8,9 +8,9 @@ services:
     restart: unless-stopped
     ports:
       - "8090:80"   # Akses via http://172.17.10.4:8090 (port 8080/8081/8088/8089 sudah dipakai)
-    env_file:
-      - .env
     volumes:
+      # Mount .env dari host → container supaya Laravel bisa baca file langsung
+      - ./.env:/var/www/html/.env
       # Persistent: storage (logs, sessions, cache)
       - edokter-storage:/var/www/html/storage
       # Berkas digital pasien — share dengan Khanza via NFS/SMB kalau perlu
