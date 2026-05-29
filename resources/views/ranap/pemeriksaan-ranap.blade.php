@@ -40,6 +40,7 @@
             <x-adminlte-card title="Diagnosa" theme="info" icon="fas fa-lg fa-diagnoses" collapsible="collapsed" maximizable>
                 <livewire:ralan.diagnosa :noRawat="request()->get('no_rawat')" :noRm="request()->get('no_rm')" />
             </x-adminlte-card>
+            <livewire:ranap.resep-pulang :no-rawat="request()->get('no_rawat')" />
             <livewire:ranap.resume-pasien :no-rawat="request()->get('no_rawat')" />
             @endunless
             <livewire:ranap.catatan-pasien :noRawat="request()->get('no_rawat')" :noRm="request()->get('no_rm')" />
