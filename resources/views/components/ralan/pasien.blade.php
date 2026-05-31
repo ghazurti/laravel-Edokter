@@ -50,62 +50,45 @@
                     <x-adminlte-button label="I-Care BPJS" id="icare-button" theme="success" />
                 </div>
             </span>
-            <span class="nav-link">
-                <div class="d-flex flex-row justify-content-between" style="gap:10px">
-                    <x-adminlte-button icon="fas fa-folder" id="btn-rm" data-rm="{{$data->no_rkm_medis}}"
-                        label="Berkas RM Digital" theme="success" />
-                    <x-adminlte-button icon="fas fa-folder" label="Berkas RM Retensi" theme="secondary"
-                        onclick="getBerkasRetensi()" />
-                </div>
-            </span>
         </div>
-        <span class="nav-link">
-            <div class="form-group mb-2">
-                <label class="small mb-1 text-muted">Kategori Berkas</label>
-                <select id="kategoriBerkas" class="form-control form-control-sm">
-                    {{-- diisi via JS dari /berkas/kategori --}}
-                </select>
+
+        {{-- Ringkasan Klinis (pengganti Berkas RM) --}}
+        <div class="p-2 col-12">
+            @if($alergi)
+            <div class="alert alert-danger py-1 px-2 mb-2 small">
+                <i class="fas fa-exclamation-triangle mr-1"></i> <strong>ALERGI:</strong> {{ $alergi }}
             </div>
-            <x-adminlte-input-file id="fileupload" name="fileupload" igroup-size="sm" accept="image/*,application/pdf"
-                placeholder="Pilih file..." legend="Pilih">
-                <x-slot name="appendSlot">
-                    <x-adminlte-button theme="primary" onclick="uploadFile()" label="Upload" />
-                </x-slot>
-                <x-slot name="prependSlot">
-                    <div class="input-group-text text-primary">
-                        <i class="fas fa-file-upload"></i>
-                    </div>
-                </x-slot>
-            </x-adminlte-input-file>
-        </span>
+            @else
+            <div class="alert alert-success py-1 px-2 mb-2 small">
+                <i class="fas fa-check-circle mr-1"></i> Alergi: tidak ada catatan
+            </div>
+            @endif
+
+            <div class="small text-muted mb-1"><i class="fas fa-stethoscope mr-1"></i> Diagnosa Terakhir</div>
+            @forelse($diagnosaTerakhir as $d)
+            <div class="small mb-1">
+                <span class="badge badge-info">{{ $d->kd_penyakit }}</span>
+                {{ \Illuminate\Support\Str::limit($d->nm_penyakit, 42) }}
+            </div>
+            @empty
+            <div class="small text-muted mb-1">Belum ada diagnosa.</div>
+            @endforelse
+
+            @if($kunjunganTerakhir)
+            <div class="small text-muted mt-2">
+                <i class="fas fa-history mr-1"></i> Kunjungan terakhir:
+                <strong>{{ \Carbon\Carbon::parse($kunjunganTerakhir->tgl_registrasi)->isoFormat('LL') }}</strong>
+                @if($kunjunganTerakhir->nm_poli) &mdash; {{ $kunjunganTerakhir->nm_poli }} @endif
+            </div>
+            @endif
+        </div>
     </x-adminlte-profile-widget>
 </div>
-
-<x-adminlte-modal id="modalBerkasRM" class="modal-lg" title="Berkas RM" size="lg" theme="info" icon="fas fa-bell"
-    v-centered static-backdrop scrollable>
-    <div class="body-modal-berkasrm" style="gap:20px">
-        {{-- <div class="row row-cols-auto body-modal-berkasrm" style="gap:20px">
-            <div class="body-modal-berkasrm">
-            </div>
-        </div> --}}
-    </div>
-</x-adminlte-modal>
-
-<x-adminlte-modal id="modal-rm" class="modal-lg" title="Berkas RM" size="lg" theme="info" icon="fas fa-bell" v-centered
-    scrollable>
-    <livewire:component.berkas-rm />
-</x-adminlte-modal>
 
 <x-adminlte-modal id="icare-modal" title="I-Care BPJS" size="lg" theme="info" icon="fas fa-bell" v-centered
     static-backdrop scrollable>
     <div class="container-fluid container-icare">
 
-    </div>
-</x-adminlte-modal>
-
-<x-adminlte-modal id="modalBerkasRetensi" title="Berkas Retensi" size="lg" theme="info" icon="fas fa-bell" v-centered
-    static-backdrop scrollable>
-    <div class="container-retensi" style="color:#0d2741">
     </div>
 </x-adminlte-modal>
 
@@ -171,64 +154,6 @@
         $('#data-phone').text(event);
     });
 
-    // Load kategori berkas saat halaman siap
-    $(document).ready(function () {
-        $.get('/berkas/kategori', function (res) {
-            if (res && res.status && Array.isArray(res.data)) {
-                var $sel = $('#kategoriBerkas').empty();
-                res.data.forEach(function (k) {
-                    $sel.append('<option value="' + k.kode + '">' + k.nama + '</option>');
-                });
-            }
-        });
-    });
-
-    function uploadFile() {
-        var file_data = $('#fileupload').prop('files')[0];
-        if (!file_data) {
-            Swal.fire({ title: 'Pilih file', text: 'Silakan pilih file dulu', icon: 'warning' });
-            return;
-        }
-        var form_data = new FormData();
-        form_data.append('file', file_data);
-        form_data.append('no_rawat', '{{$data->no_rawat}}');
-        form_data.append('kode', $('#kategoriBerkas').val() || 'B00');
-
-        Swal.fire({
-            title: 'Mengupload...',
-            allowOutsideClick: false,
-            didOpen: function () { Swal.showLoading(); }
-        });
-
-        $.ajax({
-            url: '{{ route("berkas.upload") }}',
-            type: 'POST',
-            data: form_data,
-            headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
-            contentType: false,
-            cache: false,
-            processData: false,
-            success: function (data) {
-                Swal.close();
-                Swal.fire({
-                    title: data.status ? 'Sukses' : 'Gagal',
-                    text: data.message ?? 'Berkas berhasil diupload',
-                    icon: data.status ? 'success' : 'error',
-                    confirmButtonText: 'OK'
-                });
-                if (data.status) {
-                    $('#fileupload').val('');
-                    if (typeof getBerkasRM === 'function') getBerkasRM();
-                }
-            },
-            error: function (xhr) {
-                Swal.close();
-                var msg = (xhr.responseJSON && xhr.responseJSON.message) || 'Upload gagal';
-                Swal.fire({ title: 'Gagal', text: msg, icon: 'error', confirmButtonText: 'OK' });
-            }
-        });
-    }
-
         $('#icare-button').on('click', function(event){
             event.preventDefault();
             let kdDokter = "{{$dokter}}"
@@ -279,84 +204,6 @@
                 }
             })
         })
-
-        function getBerkasRetensi(){
-            $.ajax({
-                url: "/berkas-retensi/{{$data->no_rkm_medis}}",
-                type: "GET",
-                beforeSend:function() {
-                Swal.fire({
-                    title: 'Loading....',
-                    allowEscapeKey: false,
-                    allowOutsideClick: false,
-                    didOpen: () => {
-                        Swal.showLoading();
-                        }
-                    });
-                },
-                success: function (data) {
-                    Swal.close();
-                    if(data.status == 'success'){
-                        let decode = decodeURIComponent(data.data.lokasi_pdf);
-                        var html = '';
-                        html += '<iframe src="http://127.0.0.1/webapps/medrec/'+decode+'" frameborder="0" height="700px" width="100%"></iframe>';
-                        $('.container-retensi').html(html);
-                        $('#modalBerkasRetensi').modal('show');
-                    }else{
-                        Swal.fire({
-                            title: 'Kosong',
-                            text: data.message,
-                            icon: 'info',
-                            confirmButtonText: 'OK'
-                        })
-                    }
-                },
-                error: function (data) {
-                    console.log('Error:', data);
-                }
-            });
-        }
-
-        function getBerkasRM() {
-            $.ajax({
-                url: "/berkas/{{$data->no_rawat}}/{{$data->no_rkm_medis}}",
-                type: "GET",
-                beforeSend:function() {
-                Swal.fire({
-                    title: 'Loading....',
-                    allowEscapeKey: false,
-                    allowOutsideClick: false,
-                    didOpen: () => {
-                        Swal.showLoading();
-                    }
-                    });
-                },
-                success: function (data) {
-                    Swal.close();
-                    console.log(data);  
-                    if(data.status == 'success'){
-                        var html = '';
-                        data.data.forEach(function(item){
-                            let decoded = decodeURIComponent(item.lokasi_file);
-                            html += '<iframe src="http://127.0.0.1/webapps/berkasrawat/'+decoded+'" frameborder="0" height="700px" width="100%"></iframe>';
-                            
-                        });
-                        $('.body-modal-berkasrm').html(html);
-                        $('#modalBerkasRM').modal('show');
-                    }else{
-                        Swal.fire({
-                            title: 'Kosong',
-                            text: data.message,
-                            icon: 'info',
-                            confirmButtonText: 'OK'
-                        })
-                    }
-                },
-                error: function (data) {
-                    console.log('Error:', data);
-                }
-            });
-        }
 </script>
 {{-- <script>
 
