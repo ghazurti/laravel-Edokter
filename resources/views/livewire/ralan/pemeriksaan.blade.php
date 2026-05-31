@@ -1,5 +1,10 @@
 <div>
     <form wire:submit.prevent='simpanPemeriksaan'>
+        @if($carryInfo)
+        <div class="alert alert-info py-2 mb-2">
+            <i class="fas fa-arrow-down-up-across-line mr-1"></i> {{ $carryInfo }}
+        </div>
+        @endif
         <div class="row">
             <div class="form-group col-md-6">
                 <label for="">Subjek</label>

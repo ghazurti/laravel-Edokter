@@ -11,6 +11,7 @@ class Pemeriksaan extends Component
 {
     use SwalResponse, LivewireAlert;
     public $listPemeriksaan, $isCollapsed = false, $noRawat, $noRm, $isMaximized = true, $keluhan, $pemeriksaan, $penilaian, $instruksi, $rtl, $alergi, $suhu, $berat, $tinggi, $tensi, $nadi, $respirasi, $evaluasi, $gcs, $kesadaran = 'Compos Mentis', $lingkar, $spo2;
+    public $carryInfo;
     public $tgl, $jam;
     public $listeners = ['refreshData' => '$refresh', 'hapusPemeriksaan' => 'hapus'];
 
@@ -61,36 +62,56 @@ class Pemeriksaan extends Component
 
     public function getPemeriksaan()
     {
-        $data = DB::table('pasien')
-            ->join('pemeriksaan_ralan', 'pasien.no_rkm_medis', '=', 'pemeriksaan_ralan.no_rawat')
-            ->where('pasien.no_rkm_medis', $this->noRm)
-            ->where('pemeriksaan_ralan.alergi', '<>', 'Tidak Ada')
-            ->select('pemeriksaan_ralan.alergi')
-            ->first();
+        $username = session()->get('username');
 
-        $pemeriksaan = DB::table('pemeriksaan_ralan')
+        // Entri TERAKHIR siapa pun (umumnya perawat) — sumber carry-over TTV + keluhan.
+        $terakhir = DB::table('pemeriksaan_ralan')
             ->where('no_rawat', $this->noRawat)
+            ->orderBy('tgl_perawatan', 'desc')
             ->orderBy('jam_rawat', 'desc')
             ->first();
-        if ($pemeriksaan) {
-            $this->keluhan = $pemeriksaan->keluhan;
-            $this->pemeriksaan = $pemeriksaan->pemeriksaan;
-            $this->penilaian = $pemeriksaan->penilaian;
-            $this->instruksi = $pemeriksaan->instruksi;
-            $this->rtl = $pemeriksaan->rtl;
-            $this->alergi = $pemeriksaan->alergi ?? $data->alergi ?? 'Tidak Ada';
-            $this->suhu = $pemeriksaan->suhu_tubuh;
-            $this->berat = $pemeriksaan->berat;
-            $this->tinggi = $pemeriksaan->tinggi;
-            $this->tensi = $pemeriksaan->tensi;
-            $this->nadi = $pemeriksaan->nadi;
-            $this->respirasi = $pemeriksaan->respirasi;
-            $this->evaluasi = $pemeriksaan->evaluasi;
-            $this->gcs = $pemeriksaan->gcs;
-            $this->kesadaran = $pemeriksaan->kesadaran;
-            $this->lingkar = $pemeriksaan->lingkar_perut;
-            $this->spo2 = $pemeriksaan->spo2;
+
+        // Entri milik DOKTER ini (untuk melanjutkan Asesmen/Plan miliknya, bukan milik perawat).
+        $milikDokter = DB::table('pemeriksaan_ralan')
+            ->where('no_rawat', $this->noRawat)
+            ->where('nip', $username)
+            ->orderBy('tgl_perawatan', 'desc')
+            ->orderBy('jam_rawat', 'desc')
+            ->first();
+
+        $this->carryInfo = null;
+
+        if ($terakhir) {
+            // --- Carry-over: TTV + keluhan + alergi (tetap baris terpisah saat disimpan) ---
+            $this->keluhan   = $terakhir->keluhan;
+            $this->alergi    = $terakhir->alergi ?: 'Tidak Ada';
+            $this->suhu      = $terakhir->suhu_tubuh;
+            $this->berat     = $terakhir->berat;
+            $this->tinggi    = $terakhir->tinggi;
+            $this->tensi     = $terakhir->tensi;
+            $this->nadi      = $terakhir->nadi;
+            $this->respirasi = $terakhir->respirasi;
+            $this->gcs       = $terakhir->gcs;
+            $this->kesadaran = $terakhir->kesadaran ?: 'Compos Mentis';
+            $this->lingkar   = $terakhir->lingkar_perut;
+            $this->spo2      = $terakhir->spo2;
+
+            // Catatan transparansi bila TTV/keluhan berasal dari entri orang lain (perawat).
+            if ($terakhir->nip !== $username) {
+                $nama = DB::table('pegawai')->where('nik', $terakhir->nip)->value('nama')
+                    ?? DB::table('dokter')->where('kd_dokter', $terakhir->nip)->value('nm_dokter')
+                    ?? $terakhir->nip;
+                $this->carryInfo = 'TTV & keluhan otomatis dari entri ' . $nama
+                    . ' (' . substr((string) $terakhir->jam_rawat, 0, 5) . '). Lengkapi Asesmen & Plan Anda — tersimpan sebagai entri terpisah atas nama Anda.';
+            }
         }
+
+        // --- Asesmen/Objek/Plan = milik dokter sendiri (kosong bila belum pernah isi) ---
+        $this->pemeriksaan = $milikDokter->pemeriksaan ?? null;
+        $this->penilaian   = $milikDokter->penilaian ?? null;
+        $this->instruksi   = $milikDokter->instruksi ?? null;
+        $this->rtl         = $milikDokter->rtl ?? null;
+        $this->evaluasi    = $milikDokter->evaluasi ?? null;
     }
 
     public function simpanPemeriksaan()
