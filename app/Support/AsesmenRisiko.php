@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -37,26 +38,42 @@ class AsesmenRisiko
         ], true);
     }
 
-    /** Ambil opsi enum (urut sesuai definisi DB). */
+    /**
+     * Ambil opsi enum (urut sesuai definisi DB).
+     * Di-cache 24 jam (skema enum statis) supaya tidak SHOW COLUMNS tiap render —
+     * penting karena DB ada di server terpisah (tiap query = round-trip jaringan).
+     * Skema berubah (upgrade Khanza)? jalankan `php artisan cache:clear`.
+     */
     public static function opsiEnum(string $tabel, string $kolom): array
     {
         $ck = "$tabel.$kolom";
         if (isset(self::$enumCache[$ck])) {
             return self::$enumCache[$ck];
         }
-        $opsi = [];
-        try {
-            $row = DB::selectOne("SHOW COLUMNS FROM `$tabel` WHERE Field = ?", [$kolom]);
-            if ($row && preg_match('/^enum\((.*)\)$/i', $row->Type, $m)) {
-                preg_match_all("/'((?:[^'\\\\]|\\\\.|'')*)'/", $m[1], $mm);
-                $opsi = array_map(
-                    fn ($s) => str_replace(["''", "\\'"], "'", $s),
-                    $mm[1]
-                );
-            }
-        } catch (\Throwable $e) {
+
+        $cacheKey = "edokter:enum:$ck";
+        $opsi = Cache::get($cacheKey);
+
+        if (!is_array($opsi)) {
             $opsi = [];
+            try {
+                $row = DB::selectOne("SHOW COLUMNS FROM `$tabel` WHERE Field = ?", [$kolom]);
+                if ($row && preg_match('/^enum\((.*)\)$/i', $row->Type, $m)) {
+                    preg_match_all("/'((?:[^'\\\\]|\\\\.|'')*)'/", $m[1], $mm);
+                    $opsi = array_map(
+                        fn ($s) => str_replace(["''", "\\'"], "'", $s),
+                        $mm[1]
+                    );
+                }
+            } catch (\Throwable $e) {
+                $opsi = [];
+            }
+            // hanya cache hasil sukses (jangan cache kegagalan transien)
+            if (!empty($opsi)) {
+                Cache::put($cacheKey, $opsi, now()->addDay());
+            }
         }
+
         return self::$enumCache[$ck] = $opsi;
     }
 

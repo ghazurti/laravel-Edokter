@@ -31,6 +31,11 @@ RUN composer install --no-dev --optimize-autoloader --no-interaction \
     && mkdir -p /var/www/html/public/webapps/berkasrawat/pages/upload \
     && chmod -R 775 /var/www/html/public/webapps
 
+# PHP-FPM pool + OPcache + php.ini tuning (concurrency ~50 dokter, RAM 4 GB)
+COPY docker/www.conf /usr/local/etc/php-fpm.d/www.conf
+COPY docker/opcache.ini /usr/local/etc/php/conf.d/zz-opcache.ini
+COPY docker/php.ini /usr/local/etc/php/conf.d/zz-app.ini
+
 # Nginx & supervisor config
 COPY docker/nginx.conf /etc/nginx/http.d/default.conf
 COPY docker/supervisord.conf /etc/supervisord.conf
