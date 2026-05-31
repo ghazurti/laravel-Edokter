@@ -58,6 +58,11 @@
                         </a>
                     </li>
                     <li class="nav-item">
+                        <a class="nav-link" id="i-risiko-tab" data-toggle="pill" href="#i-risiko" role="tab">
+                            <i class="fas fa-clipboard-list mr-1"></i> Risiko
+                        </a>
+                    </li>
+                    <li class="nav-item">
                         <a class="nav-link" id="i-cetak-tab" data-toggle="pill" href="#i-cetak" role="tab">
                             <i class="fas fa-print mr-1"></i> Cetak
                         </a>
@@ -108,6 +113,11 @@
                     {{-- CPPT --}}
                     <div class="tab-pane fade" id="i-cppt" role="tabpanel">
                         @include('partials.cppt', ['noRawat' => $noRawat, 'isRanap' => $isRanap])
+                    </div>
+
+                    {{-- ASESMEN RISIKO --}}
+                    <div class="tab-pane fade" id="i-risiko" role="tabpanel">
+                        @include('partials.asesmen-risiko', ['noRawat' => $noRawat, 'modul' => 'igd'])
                     </div>
 
                     {{-- CETAK --}}
