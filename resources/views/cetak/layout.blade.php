@@ -32,10 +32,14 @@
     <div class="kop">
         <table>
             <tr>
-                @php $logo = public_path(env('LOGO_INSTANSI', '')); @endphp
+                @php
+                    // Kiri: lambang Kota/Pemda. Kanan: logo RSUD (fallback LOGO_INSTANSI).
+                    $logoKiri  = public_path(env('LOGO_KOP_KIRI', 'images/logo-kota-baubau.png'));
+                    $logoKanan = public_path(env('LOGO_KOP_KANAN', env('LOGO_INSTANSI', 'images/logo-rsud-baubau.png')));
+                @endphp
                 <td class="logo">
-                    @if($logo && file_exists($logo))
-                        <img src="{{ $logo }}" alt="logo">
+                    @if($logoKiri && file_exists($logoKiri))
+                        <img src="{{ $logoKiri }}" alt="logo kiri">
                     @endif
                 </td>
                 <td class="inst">
@@ -46,7 +50,11 @@
                         @if(env('EMAIL_INSTANSI')) &middot; {{ env('EMAIL_INSTANSI') }} @endif
                     </div>
                 </td>
-                <td class="logo"></td>
+                <td class="logo">
+                    @if($logoKanan && file_exists($logoKanan))
+                        <img src="{{ $logoKanan }}" alt="logo kanan">
+                    @endif
+                </td>
             </tr>
         </table>
     </div>
