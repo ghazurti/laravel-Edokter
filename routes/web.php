@@ -234,3 +234,5 @@ Route::get('/cetak/surat-rujukan/{noRawat}', [App\Http\Controllers\CetakControll
     ->where('noRawat', '.*')->name('cetak.surat-rujukan');
 Route::get('/cetak/surat-kontrol/{noRawat}', [App\Http\Controllers\CetakController::class, 'suratKontrol'])
     ->where('noRawat', '.*')->name('cetak.surat-kontrol');
+Route::get('/cetak/persetujuan-tindakan/{noPernyataan}', [App\Http\Controllers\CetakController::class, 'persetujuanTindakan'])
+    ->name('cetak.persetujuan-tindakan');

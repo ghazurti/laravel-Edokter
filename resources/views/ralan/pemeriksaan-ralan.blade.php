@@ -120,6 +120,7 @@
                             <x-ralan.resep />
                         </x-adminlte-card>
                         <livewire:component.tindakan :no-rawat="$noRawat" />
+                        <livewire:component.persetujuan-tindakan :no-rawat="$noRawat" />
                         <x-adminlte-card title="Laporan Operasi" icon="fas fa-lg fa-notes-medical" theme="info" maximizable collapsible="collapsed">
                             <livewire:ranap.lap-operasi :no-rawat="$noRawat" />
                             <livewire:ranap.template-lap-operasi />

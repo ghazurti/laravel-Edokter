@@ -95,6 +95,7 @@
                             <x-ralan.resep />
                         </x-adminlte-card>
                         <livewire:component.tindakan :no-rawat="$noRawat" />
+                        <livewire:component.persetujuan-tindakan :no-rawat="$noRawat" />
                     </div>
 
                     {{-- KONSUL --}}

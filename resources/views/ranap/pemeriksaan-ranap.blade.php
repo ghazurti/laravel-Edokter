@@ -97,6 +97,7 @@
                         <div class="tab-pane fade" id="t-terapi" role="tabpanel">
                             <x-ranap.resep-ranap />
                             <livewire:component.tindakan :no-rawat="$noRawat" />
+                            <livewire:component.persetujuan-tindakan :no-rawat="$noRawat" />
                             <x-adminlte-card title="Laporan Operasi" icon='fas fa-stethoscope' theme="info" maximizable collapsible="collapsed">
                                 <livewire:ranap.lap-operasi :no-rawat="$noRawat" />
                                 <livewire:ranap.template-lap-operasi />

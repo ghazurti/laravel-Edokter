@@ -170,4 +170,21 @@ class CetakController extends Controller
 
         return $pdf->stream('surat-kontrol-' . $noRawat . '.pdf');
     }
+
+    public function persetujuanTindakan($noPernyataan)
+    {
+        $data = DB::table('persetujuan_penolakan_tindakan as p')
+            ->leftJoin('dokter', 'p.kd_dokter', '=', 'dokter.kd_dokter')
+            ->where('p.no_pernyataan', $noPernyataan)
+            ->select('p.*', 'dokter.nm_dokter')
+            ->first();
+        abort_unless($data, 404, 'Data persetujuan tidak ditemukan');
+
+        $pasien = $this->infoPasien($data->no_rawat);
+
+        $pdf = Pdf::loadView('cetak.persetujuan-tindakan', compact('data', 'pasien'))
+            ->setPaper('a4', 'portrait');
+
+        return $pdf->stream('persetujuan-' . $noPernyataan . '.pdf');
+    }
 }
