@@ -90,11 +90,11 @@
             justify-content: space-between;
             flex-wrap: wrap;
             gap: 12px;
-            background: linear-gradient(135deg, #1f8a3a 0%, #156b2c 100%);
+            background: linear-gradient(135deg, #2f7da3 0%, #256683 100%);
             color: #ffffff;
             padding: 20px 28px;
             border-radius: 10px;
-            box-shadow: 0 6px 20px rgba(31,138,58,0.25);
+            box-shadow: 0 6px 20px rgba(47,125,163,0.25);
             margin-bottom: 4px;
             position: relative;
             overflow: hidden;
@@ -112,7 +112,7 @@
             position: absolute;
             top: -40px; right: -40px;
             width: 180px; height: 180px;
-            background: rgba(244,200,31,0.18);
+            background: rgba(108,196,224,0.18);
             border-radius: 50%;
         }
         .welcome-banner-text small {
@@ -126,8 +126,8 @@
             font-size: 22px;
         }
         .welcome-banner-text .badge-warning {
-            background: #f4c81f;
-            color: #5a4a00;
+            background: #6cc4e0;
+            color: #143a4a;
             font-size: 11px;
             padding: 5px 10px;
             font-weight: 600;
@@ -140,14 +140,14 @@
         }
 
         /* Info boxes accent */
-        .info-box .info-box-icon.bg-success { background: #1f8a3a !important; }
-        .info-box .info-box-icon.bg-warning { background: #f4c81f !important; color: #5a4a00 !important; }
+        .info-box .info-box-icon.bg-success { background: #2f7da3 !important; }
+        .info-box .info-box-icon.bg-warning { background: #6cc4e0 !important; color: #143a4a !important; }
 
         /* Cards with success theme — use logo green, white title */
-        .card.card-success.card-outline { border-top-color: #1f8a3a; }
+        .card.card-success.card-outline { border-top-color: #2f7da3; }
         .card.card-success > .card-header,
         .card.bg-success > .card-header {
-            background: #1f8a3a !important;
+            background: #2f7da3 !important;
             color: #ffffff !important;
             border-bottom: 0;
         }
@@ -165,7 +165,7 @@
         .info-box .info-box-number {
             color: #ffffff !important;
         }
-        .info-box { background: #1f8a3a; }
+        .info-box { background: #2f7da3; }
         .info-box .info-box-icon { background: rgba(255,255,255,0.18) !important; color: #ffffff !important; }
     </style>
 @stop
@@ -180,8 +180,8 @@
                 datasets: [{
                     label: 'Jumlah Kunjungan ' + "{{ ucwords(strtolower($poliklinik))}}",
                     data: {!! json_encode($jumlah) !!},
-                    backgroundColor: 'rgba(31, 138, 58, 0.75)',
-                    borderColor: '#156b2c',
+                    backgroundColor: 'rgba(47,125,163, 0.75)',
+                    borderColor: '#256683',
                     borderWidth: 1
                 }]
             },

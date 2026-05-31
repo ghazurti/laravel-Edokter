@@ -24,7 +24,7 @@
         <x-ralan.pasien :no-rawat="$noRawat" />
     </div>
     <div class="col-md-8">
-        <div class="card card-danger card-outline card-tabs">
+        <div class="card card-info card-outline card-tabs">
             <div class="card-header p-0 pt-1 border-bottom-0">
                 <ul class="nav nav-tabs" id="tab-igd" role="tablist">
                     <li class="nav-item">

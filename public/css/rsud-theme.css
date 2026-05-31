@@ -1,16 +1,85 @@
 /* ===================================================================
    RSUD Kota Baubau - Theme Override
-   Logo colors: green #1f8a3a / dark green #0f5021 / yellow #f4c81f
+   Palet: teal/biru #2f7da3 (bersih, kalem). Aksen cyan #6cc4e0.
+   (nama variabel --rsud-green* dipertahankan agar tak perlu ubah
+    puluhan selektor; nilainya kini teal.)
    =================================================================== */
 
 :root {
-    --rsud-green: #1f8a3a;
-    --rsud-green-dark: #156b2c;
-    --rsud-green-darker: #0f5021;
-    --rsud-green-darkest: #08361a;
-    --rsud-yellow: #f4c81f;
-    --rsud-yellow-text: #5a4a00;
+    --rsud-green: #2f7da3;        /* teal utama */
+    --rsud-green-dark: #256683;   /* teal gelap (hover) */
+    --rsud-green-darker: #1c4f66; /* sidebar */
+    --rsud-green-darkest: #143a4a;/* brand-link / header sidebar */
+    --rsud-yellow: #6cc4e0;       /* aksen cyan (pengganti kuning) */
+    --rsud-yellow-text: #1c4f66;
+    --rsud-green-l: #e8f3f8;      /* teal sangat muda (alert/bg lembut) */
 }
+
+/* ===================================================================
+   GLOBAL: remap Bootstrap/AdminLTE "success" (hijau) → teal RSUD.
+   Seluruh app dibangun di atas warna semantic "success", jadi cukup
+   override di sini — navbar, info-box, card, badge, button, alert.
+   =================================================================== */
+.bg-success,
+.badge-success,
+.navbar-success,
+.btn-success,
+.bg-gradient-success {
+    background-color: var(--rsud-green) !important;
+    border-color: var(--rsud-green) !important;
+    color: #ffffff !important;
+}
+.bg-gradient-success {
+    background: linear-gradient(180deg, var(--rsud-green), var(--rsud-green-dark)) !important;
+}
+.btn-success:hover, .btn-success:focus {
+    background-color: var(--rsud-green-dark) !important;
+    border-color: var(--rsud-green-dark) !important;
+}
+.btn-outline-success {
+    color: var(--rsud-green) !important;
+    border-color: var(--rsud-green) !important;
+    background-color: transparent !important;
+}
+.btn-outline-success:hover {
+    background-color: var(--rsud-green) !important;
+    color: #ffffff !important;
+}
+.text-success { color: var(--rsud-green) !important; }
+.border-success { border-color: var(--rsud-green) !important; }
+
+/* info-box (dashboard) yang theme="success" → seluruh box teal */
+.info-box.bg-success,
+.info-box .info-box-icon.bg-success { background-color: var(--rsud-green) !important; }
+
+/* alert-success → teal lembut */
+.alert-success {
+    background-color: var(--rsud-green-l, #e8f3f8) !important;
+    border-color: var(--rsud-green) !important;
+    color: var(--rsud-green-dark) !important;
+}
+
+/* card theme="success" → header teal, outline teal */
+.card.card-success { border-top-color: var(--rsud-green) !important; }
+.card.card-success:not(.card-outline) > .card-header {
+    background-color: var(--rsud-green) !important;
+    border-bottom: 0;
+}
+.card.card-success > .card-header,
+.card.card-success > .card-header .card-title,
+.card.card-success > .card-header .card-title i,
+.card.card-success > .card-header .card-tools .btn-tool {
+    color: #ffffff !important;
+}
+.card.card-success.card-outline > .card-header,
+.card.card-success.card-outline > .card-header .card-title,
+.card.card-success.card-outline > .card-header .card-title i {
+    color: var(--rsud-green-darker) !important;
+    background: transparent !important;
+}
+
+/* chart/legend swatch & progress bars success */
+.progress-bar.bg-success { background-color: var(--rsud-green) !important; }
 
 /* ===== Sidebar: dark green ===== */
 .sidebar-rsud,
@@ -68,7 +137,7 @@
     color: #ffffff;
 }
 .sidebar-dark-success .nav-treeview > .nav-item > .nav-link.active {
-    background: rgba(244,200,31,0.15) !important;
+    background: rgba(108,196,224,0.15) !important;
     color: var(--rsud-yellow) !important;
 }
 

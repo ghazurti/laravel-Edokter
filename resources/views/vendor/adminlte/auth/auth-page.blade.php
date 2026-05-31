@@ -12,9 +12,9 @@
     <style>
         :root {
             --teal-light: #4cb56a;
-            --teal: #1f8a3a;
-            --teal-dark: #156b2c;
-            --teal-darker: #0f5021;
+            --teal: #2f7da3;
+            --teal-dark: #256683;
+            --teal-darker: #1c4f66;
             --accent: #f4c81f;
         }
 
@@ -22,7 +22,7 @@
         body.register-page {
             margin: 0;
             min-height: 100vh;
-            background: linear-gradient(135deg, #1f8a3a 0%, #156b2c 100%);
+            background: linear-gradient(135deg, #2f7da3 0%, #256683 100%);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -56,7 +56,7 @@
         body.login-page::after,
         body.register-page::after {
             bottom: 0;
-            background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 320' preserveAspectRatio='none'><path fill='%230f5021' fill-opacity='0.55' d='M0,96L60,117.3C120,139,240,181,360,181.3C480,181,600,139,720,138.7C840,139,960,181,1080,202.7C1200,224,1320,224,1380,224L1440,224L1440,320L0,320Z'/></svg>");
+            background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 320' preserveAspectRatio='none'><path fill='%231c4f66' fill-opacity='0.55' d='M0,96L60,117.3C120,139,240,181,360,181.3C480,181,600,139,720,138.7C840,139,960,181,1080,202.7C1200,224,1320,224,1380,224L1440,224L1440,320L0,320Z'/></svg>");
             background-position: bottom;
         }
 
