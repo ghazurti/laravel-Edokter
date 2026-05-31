@@ -10,9 +10,13 @@ class TrustProxies extends Middleware
     /**
      * The trusted proxies for this application.
      *
+     * '*' = percayai reverse proxy di depan (mis. aaPanel/nginx) supaya Laravel
+     * membaca X-Forwarded-* (host, proto, IP asli klien). Aman untuk intranet
+     * di balik proxy terkontrol. Bisa dipersempit ke IP proxy, mis. '172.17.10.5'.
+     *
      * @var array<int, string>|string|null
      */
-    protected $proxies;
+    protected $proxies = '*';
 
     /**
      * The headers that should be used to detect proxies.
