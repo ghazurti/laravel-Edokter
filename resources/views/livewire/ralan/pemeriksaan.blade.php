@@ -5,6 +5,14 @@
             <i class="fas fa-arrow-down-up-across-line mr-1"></i> {{ $carryInfo }}
         </div>
         @endif
+        <div class="d-flex align-items-center mb-2" style="gap:.5rem">
+            <button type="button" wire:click="ambilDariPerawat" wire:loading.attr="disabled"
+                class="btn btn-sm btn-outline-success">
+                <span wire:loading.remove wire:target="ambilDariPerawat"><i class="fas fa-user-nurse mr-1"></i> Ambil dari Perawat</span>
+                <span wire:loading wire:target="ambilDariPerawat"><i class="fas fa-spinner fa-spin mr-1"></i> Mengambil...</span>
+            </button>
+            <small class="text-muted">Tarik catatan perawat (S/O/A/P + TTV) sebagai titik awal — disimpan sebagai entri Anda sendiri.</small>
+        </div>
         <div class="row">
             <div class="form-group col-md-6">
                 <label for="">Subjek</label>

@@ -114,6 +114,63 @@ class Pemeriksaan extends Component
         $this->evaluasi    = $milikDokter->evaluasi ?? null;
     }
 
+    /**
+     * Ambil isian CPPT perawat (entri terakhir oleh penulis lain) ke dalam form
+     * dokter sebagai titik awal. Dokter tetap menyimpan sebagai entri terpisah
+     * atas namanya sendiri (tidak menimpa catatan perawat — sesuai kaidah RME).
+     */
+    public function ambilDariPerawat()
+    {
+        $username = session()->get('username');
+
+        $perawat = DB::table('pemeriksaan_ralan')
+            ->where('no_rawat', $this->noRawat)
+            ->where('nip', '!=', $username)
+            ->orderBy('tgl_perawatan', 'desc')
+            ->orderBy('jam_rawat', 'desc')
+            ->first();
+
+        if (!$perawat) {
+            $this->alert('info', 'Belum ada catatan perawat untuk kunjungan ini.', [
+                'position' => 'center',
+                'timer' => 3000,
+                'toast' => false,
+            ]);
+            return;
+        }
+
+        // Subjektif + Objektif + Asesmen + Plan + Evaluasi
+        $this->keluhan     = $perawat->keluhan;
+        $this->pemeriksaan = $perawat->pemeriksaan;
+        $this->penilaian   = $perawat->penilaian;
+        $this->instruksi   = $perawat->instruksi;
+        $this->rtl         = $perawat->rtl;
+        $this->evaluasi    = $perawat->evaluasi;
+        $this->alergi      = $perawat->alergi ?: 'Tidak Ada';
+
+        // TTV
+        $this->suhu      = $perawat->suhu_tubuh;
+        $this->berat     = $perawat->berat;
+        $this->tinggi    = $perawat->tinggi;
+        $this->tensi     = $perawat->tensi;
+        $this->nadi      = $perawat->nadi;
+        $this->respirasi = $perawat->respirasi;
+        $this->gcs       = $perawat->gcs;
+        $this->kesadaran = $perawat->kesadaran ?: 'Compos Mentis';
+        $this->lingkar   = $perawat->lingkar_perut;
+        $this->spo2      = $perawat->spo2;
+
+        $nama = DB::table('pegawai')->where('nik', $perawat->nip)->value('nama')
+            ?? DB::table('dokter')->where('kd_dokter', $perawat->nip)->value('nm_dokter')
+            ?? $perawat->nip;
+
+        $this->alert('success', 'Catatan ' . $nama . ' (' . substr((string) $perawat->jam_rawat, 0, 5) . ') berhasil ditarik. Lengkapi & simpan sebagai entri Anda.', [
+            'position' => 'center',
+            'timer' => 3500,
+            'toast' => false,
+        ]);
+    }
+
     public function simpanPemeriksaan()
     {
         try {
