@@ -36,12 +36,15 @@ trait BpjsTraits
     {
         try {
             $xTimestamp = $this->craeteTimestamp();
-            $url = env('BPJS_ICARE_BASE_URL') . $suburl;
+            $baseUrl = rtrim(env('BPJS_ICARE_BASE_URL'), '/') . '/';
+            $url = $baseUrl . $suburl;
+            // I-Care punya user_key tersendiri; fallback ke BPJS_USER_KEY kalau belum diisi
+            $userKey = env('BPJS_ICARE_USER_KEY') ?: env('BPJS_USER_KEY');
             $res = Http::timeout(60)->accept('application/json')->withHeaders([
                 'X-cons-id' => env('BPJS_CONS_ID'),
                 'X-timestamp' => $xTimestamp,
                 'X-signature' => $this->createSign($xTimestamp, env('BPJS_CONS_ID')),
-                'user_key' => env('BPJS_USER_KEY'),
+                'user_key' => $userKey,
             ])->post($url, $request);
 
             $json = $res->json();
@@ -49,10 +52,24 @@ trait BpjsTraits
                 \Log::error('[BPJS] Non-JSON response', [
                     'url' => $url, 'status' => $res->status(), 'body' => $res->body()
                 ]);
+                // 404 "No Mapping Rule matched" = endpoint tidak ada di environment ini.
+                // I-Care JKN HANYA tersedia di server PRODUKSI (apijkn), bukan apijkn-dev.
+                $body = trim($res->body());
+                $isDev = str_contains($baseUrl, 'apijkn-dev');
+                if ($res->status() == 404 && (str_contains($body, 'No Mapping Rule') || $isDev)) {
+                    $pesan = $isDev
+                        ? 'I-Care JKN tidak tersedia di server DEV BPJS. Ganti BPJS_ICARE_BASE_URL ke produksi (https://apijkn.bpjs-kesehatan.go.id/icare-rest/) dan pakai cons-id, secret key, serta user_key I-Care produksi.'
+                        : 'Endpoint I-Care tidak ditemukan (404). Cek BPJS_ICARE_BASE_URL dan user_key layanan I-Care.';
+                    return response()->json([
+                        'code'    => 404,
+                        'message' => $pesan,
+                        'raw'     => substr($body, 0, 500),
+                    ], 200);
+                }
                 return response()->json([
                     'code'    => $res->status(),
                     'message' => 'BPJS endpoint tidak merespon JSON (' . $res->status() . '). Cek BPJS_ICARE_BASE_URL.',
-                    'raw'     => substr($res->body(), 0, 500),
+                    'raw'     => substr($body, 0, 500),
                 ], 200);
             }
             return $this->responseDataBpjs($json, $xTimestamp);
