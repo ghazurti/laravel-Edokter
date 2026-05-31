@@ -222,3 +222,15 @@ Route::get('/pegawai', [App\Http\Controllers\API\PemeriksaanController::class, '
 Route::get('/offline', function () {
     return view('modules/laravelpwa/offline');
 });
+
+// ===== Cetak Dokumen (PDF) =====
+Route::get('/cetak/resep/{noRawat}', [App\Http\Controllers\CetakController::class, 'resep'])
+    ->where('noRawat', '.*')->name('cetak.resep');
+Route::get('/cetak/resume-medis/{noRawat}', [App\Http\Controllers\CetakController::class, 'resumeMedis'])
+    ->where('noRawat', '.*')->name('cetak.resume');
+Route::get('/cetak/surat-sakit/{noRawat}', [App\Http\Controllers\CetakController::class, 'suratSakit'])
+    ->where('noRawat', '.*')->name('cetak.surat-sakit');
+Route::get('/cetak/surat-rujukan/{noRawat}', [App\Http\Controllers\CetakController::class, 'suratRujukan'])
+    ->where('noRawat', '.*')->name('cetak.surat-rujukan');
+Route::get('/cetak/surat-kontrol/{noRawat}', [App\Http\Controllers\CetakController::class, 'suratKontrol'])
+    ->where('noRawat', '.*')->name('cetak.surat-kontrol');
