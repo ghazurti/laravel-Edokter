@@ -5,8 +5,7 @@
                 <div class="form-group">
                     <label>Tanggal</label>
                     <input type="datetime-local" class="form-control form-control-sm"
-                        wire:model="tanggal"
-                        value="{{ \Carbon\Carbon::parse($tanggal)->format('Y-m-d\TH:i') }}">
+                        wire:model="tanggal">
                 </div>
             </div>
             <div class="col-md-4">

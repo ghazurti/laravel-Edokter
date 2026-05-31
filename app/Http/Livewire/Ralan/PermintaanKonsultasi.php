@@ -32,7 +32,7 @@ class PermintaanKonsultasi extends Component
     public function mount($noRawat)
     {
         $this->noRawat = $noRawat;
-        $this->tanggal = now()->format('Y-m-d H:i:s');
+        $this->tanggal = now()->format('Y-m-d\TH:i');
         $this->loadDokterLogin();
         $this->getDaftarKonsultasi();
     }
@@ -78,12 +78,15 @@ class PermintaanKonsultasi extends Component
     {
         $this->validate();
 
+        // Input datetime-local -> format datetime DB (Y-m-d H:i:s)
+        $tanggalDb = \Carbon\Carbon::parse($this->tanggal)->format('Y-m-d H:i:s');
+
         try {
             if ($this->editMode) {
                 DB::table('konsultasi_medik')
                     ->where('no_permintaan', $this->noPermintaan)
                     ->update([
-                        'tanggal'            => $this->tanggal,
+                        'tanggal'            => $tanggalDb,
                         'jenis_permintaan'   => $this->jenisPermintaan,
                         'kd_dokter'          => $this->kdDokter,
                         'kd_dokter_dikonsuli'=> $this->kdDokterDikonsuli,
@@ -96,7 +99,7 @@ class PermintaanKonsultasi extends Component
                 DB::table('konsultasi_medik')->insert([
                     'no_permintaan'      => $noPermintaan,
                     'no_rawat'           => $this->noRawat,
-                    'tanggal'            => $this->tanggal,
+                    'tanggal'            => $tanggalDb,
                     'jenis_permintaan'   => $this->jenisPermintaan,
                     'kd_dokter'          => $this->kdDokter,
                     'kd_dokter_dikonsuli'=> $this->kdDokterDikonsuli,
@@ -125,7 +128,7 @@ class PermintaanKonsultasi extends Component
         if ($data) {
             $this->editMode           = true;
             $this->noPermintaan       = $data->no_permintaan;
-            $this->tanggal            = $data->tanggal;
+            $this->tanggal            = \Carbon\Carbon::parse($data->tanggal)->format('Y-m-d\TH:i');
             $this->jenisPermintaan    = $data->jenis_permintaan;
             $this->kdDokter           = $data->kd_dokter;
             $this->nmDokter           = $data->nm_dokter_konsul;
@@ -178,7 +181,7 @@ class PermintaanKonsultasi extends Component
     {
         $this->editMode          = false;
         $this->noPermintaan      = null;
-        $this->tanggal           = now()->format('Y-m-d H:i:s');
+        $this->tanggal           = now()->format('Y-m-d\TH:i');
         $this->jenisPermintaan   = 'Konsultasi';
         $this->kdDokterDikonsuli = '';
         $this->nmDokterDikonsuli = '';
