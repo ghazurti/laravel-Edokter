@@ -85,6 +85,39 @@
                     </button>
                 </div>
             </div>
+
+            {{-- Surat Keterangan Kematian --}}
+            <div class="col-md-4 mb-2">
+                <div class="border rounded p-2 h-100">
+                    <b><i class="fas fa-cross mr-1"></i> Surat Keterangan Kematian</b>
+                    <div class="form-group mb-1 mt-2">
+                        <label class="mb-0 small">Nomor surat</label>
+                        <input type="text" class="form-control form-control-sm" id="skm_nomor_{{ $rw }}" placeholder="0001/rs/{{ date('Y') }}">
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group col-7 mb-1">
+                            <label class="mb-0 small">Tgl meninggal</label>
+                            <input type="date" value="{{ date('Y-m-d') }}" class="form-control form-control-sm" id="skm_tgl_{{ $rw }}">
+                        </div>
+                        <div class="form-group col-5 mb-1">
+                            <label class="mb-0 small">Pukul</label>
+                            <input type="time" value="{{ date('H:i') }}" class="form-control form-control-sm" id="skm_jam_{{ $rw }}">
+                        </div>
+                    </div>
+                    <div class="form-group mb-1">
+                        <label class="mb-0 small">Tempat meninggal</label>
+                        <input type="text" value="Rumah Sakit" class="form-control form-control-sm" id="skm_tempat_{{ $rw }}">
+                    </div>
+                    <div class="form-group mb-2">
+                        <label class="mb-0 small">Diagnosa (ICD)</label>
+                        <input type="text" class="form-control form-control-sm" id="skm_icd_{{ $rw }}" placeholder="otomatis dari diagnosa">
+                    </div>
+                    <button class="btn btn-primary btn-sm btn-block"
+                        onclick="cetakSuratKematian('{{ $rw }}')">
+                        <i class="fas fa-print mr-1"></i> Cetak
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
 </div>
@@ -112,6 +145,16 @@
             catatan: document.getElementById('ktr_catatan_' + rw).value,
         }).toString();
         window.open('{{ url('cetak/surat-kontrol') }}/' + rw + '?' + q, '_blank');
+    }
+    function cetakSuratKematian(rw) {
+        const q = new URLSearchParams({
+            nomor: document.getElementById('skm_nomor_' + rw).value,
+            tgl_wafat: document.getElementById('skm_tgl_' + rw).value,
+            jam_wafat: document.getElementById('skm_jam_' + rw).value,
+            tempat: document.getElementById('skm_tempat_' + rw).value,
+            diagnosa_icd: document.getElementById('skm_icd_' + rw).value,
+        }).toString();
+        window.open('{{ url('cetak/surat-kematian') }}/' + rw + '?' + q, '_blank');
     }
 </script>
 @endpush

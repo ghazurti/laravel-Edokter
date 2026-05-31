@@ -35,6 +35,8 @@ class CetakController extends Controller
                 'pasien.alamat',
                 'pasien.no_ktp',
                 'pasien.pekerjaan',
+                'pasien.agama',
+                'pasien.no_peserta',
                 'dokter.nm_dokter',
                 'poliklinik.nm_poli'
             )
@@ -169,6 +171,43 @@ class CetakController extends Controller
         ])->setPaper('a5', 'portrait');
 
         return $pdf->stream('surat-kontrol-' . $noRawat . '.pdf');
+    }
+
+    public function suratKematian(Request $request, $noRawat)
+    {
+        $pasien = $this->infoPasien($noRawat);
+        abort_unless($pasien, 404, 'Data pasien tidak ditemukan');
+
+        $nomor       = $request->query('nomor', '');
+        $tglWafat    = $request->query('tgl_wafat', date('Y-m-d'));
+        $jamWafat    = $request->query('jam_wafat', date('H:i'));
+        $tempat      = $request->query('tempat', 'Rumah Sakit');
+        $diagnosaIcd = $request->query('diagnosa_icd', '');
+
+        // default kode ICD dari diagnosa pasien (kode pertama) bila tidak diisi
+        if ($diagnosaIcd === '') {
+            $diagnosaIcd = optional($this->diagnosaList($noRawat)->first())->kd_penyakit ?? '';
+        }
+
+        $wafat = \Carbon\Carbon::parse($tglWafat . ' ' . $jamWafat);
+
+        // umur saat meninggal (dari tgl_lahir)
+        $umur = '-';
+        if (!empty($pasien->tgl_lahir) && $pasien->tgl_lahir != '0000-00-00') {
+            $d = \Carbon\Carbon::parse($pasien->tgl_lahir)->diff($wafat);
+            $umur = "{$d->y} Th {$d->m} Bl {$d->d} Hr";
+        }
+
+        $pdf = Pdf::loadView('cetak.surat-kematian', [
+            'pasien'      => $pasien,
+            'nomor'       => $nomor,
+            'wafat'       => $wafat,
+            'tempat'      => $tempat,
+            'diagnosaIcd' => $diagnosaIcd,
+            'umur'        => $umur,
+        ])->setPaper('a4', 'portrait');
+
+        return $pdf->stream('surat-kematian-' . $noRawat . '.pdf');
     }
 
     public function persetujuanTindakan($noPernyataan)
