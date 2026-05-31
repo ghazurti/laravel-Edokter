@@ -19,6 +19,7 @@
         ->where('no_rawat', $noRawat)->value('status_lanjut') === 'Ranap';
 @endphp
 @include('partials.tab-style')
+<x-ralan.riwayat :no-rawat="$noRawat" />
 <div class="row">
     <div class="col-md-4">
         <x-ralan.pasien :no-rawat="$noRawat" />
