@@ -102,18 +102,20 @@
             </div>
         </div>
         <div class="row justify-content-end pr-2">
-            <div class="md:col-3 sm:col-auto">
-                @php
-                $config = ['format' => 'YYYY-MM-DD'];
-                @endphp
-                <form action="{{route('ralan.pasien')}}" method="GET">
-                <x-adminlte-input-date name="tanggal" value="{{$tanggal}}" :config="$config" placeholder="Pilih Tanggal...">
-                    <x-slot name="appendSlot">
-                        <x-adminlte-button class="btn-flat" type="submit" theme="primary" icon="fas fa-lg fa-search"/>
-                    </x-slot>
-                </x-adminlte-input-date>
-                </form>
-            </div>
+            <form action="{{route('ralan.pasien')}}" method="GET" class="form-inline justify-content-end" style="gap:.5rem">
+                <div class="form-group">
+                    <label class="mr-2 mb-0 small text-muted">Dari</label>
+                    <input type="date" name="tgl_awal" value="{{$tglAwal}}" class="form-control form-control-sm" max="{{ date('Y-m-d') }}">
+                </div>
+                <div class="form-group">
+                    <label class="mr-2 mb-0 small text-muted">s/d</label>
+                    <input type="date" name="tgl_akhir" value="{{$tglAkhir}}" class="form-control form-control-sm" max="{{ date('Y-m-d') }}">
+                </div>
+                <button type="submit" class="btn btn-sm btn-primary"><i class="fas fa-search mr-1"></i>Cari</button>
+                @if($cariTanggal)
+                <a href="{{route('ralan.pasien')}}" class="btn btn-sm btn-outline-secondary"><i class="fas fa-undo mr-1"></i>Hari Ini</a>
+                @endif
+            </form>
         </div>
     </x-adminlte-callout>
     
@@ -198,8 +200,11 @@
 @push('js')
 <script>
     // Auto-redirect ke tanggal hari ini (Asia/Makassar / WITA) kalau page kelewat hari
+    // Dilewati kalau user sedang mencari tanggal tertentu (mode pencarian manual)
     (function () {
-        const pageDate = '{{ $tanggal }}';
+        const sedangMencari = {{ $cariTanggal ? 'true' : 'false' }};
+        if (sedangMencari) return;
+        const pageDate = '{{ $tglAwal }}';
         function todayStr() {
             // pakai TZ Asia/Makassar terlepas dari device user
             const parts = new Intl.DateTimeFormat('en-CA', {
@@ -210,9 +215,8 @@
         }
         function check() {
             if (pageDate !== todayStr()) {
-                const url = new URL(window.location.href);
-                url.searchParams.set('tanggal', todayStr());
-                window.location.href = url.toString();
+                // kembali ke daftar default (otomatis hari ini)
+                window.location.href = '{{ route('ralan.pasien') }}';
             }
         }
         setInterval(check, 60 * 1000);
