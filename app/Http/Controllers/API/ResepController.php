@@ -99,6 +99,50 @@ class ResepController extends Controller
         return response()->json($data);
     }
 
+    /**
+     * Cari restriksi obat (fallback ke ALL). Return null jika tidak ada.
+     */
+    private function cariRestriksi($kodeObat, $kdPj)
+    {
+        $sql = "SELECT ro.max_jml, ro.keterangan
+                FROM restriksi_obat ro
+                INNER JOIN databarang db ON db.kode_brng = ?
+                WHERE ro.kode_brng = ?
+                  AND ro.aktif = 'Y'
+                  AND (
+                        (ro.kdjenis = db.kdjns AND ro.kd_pj = ?)
+                     OR (ro.kdjenis = db.kdjns AND ro.kd_pj = 'ALL')
+                     OR (ro.kdjenis = 'ALL'    AND ro.kd_pj = ?)
+                     OR (ro.kdjenis = 'ALL'    AND ro.kd_pj = 'ALL')
+                  )
+                ORDER BY CASE
+                   WHEN ro.kdjenis = db.kdjns AND ro.kd_pj = ? THEN 1
+                   WHEN ro.kdjenis = db.kdjns                   THEN 2
+                   WHEN ro.kd_pj   = ?                          THEN 3
+                   ELSE 4
+                END
+                LIMIT 1";
+        $rows = DB::select($sql, [$kodeObat, $kodeObat, $kdPj, $kdPj, $kdPj, $kdPj]);
+        return $rows[0] ?? null;
+    }
+
+    public function getRestriksiObat($kodeObat, $noRawat)
+    {
+        $noRawat = $this->decryptData($noRawat);
+        $reg = DB::table('reg_periksa')->where('no_rawat', $noRawat)->first();
+        if (!$reg) {
+            return response()->json(null);
+        }
+        $row = $this->cariRestriksi($kodeObat, $reg->kd_pj);
+        if (!$row || $row->max_jml <= 0) {
+            return response()->json(null);
+        }
+        return response()->json([
+            'max_jml'     => (float) $row->max_jml,
+            'keterangan'  => $row->keterangan ?: 'Obat dengan batas peresepan',
+        ]);
+    }
+
     public function postResep(Request $request, $noRawat)
     {
         $dokter = session()->get('username');
@@ -109,6 +153,34 @@ class ResepController extends Controller
         $kode = $request->get('kode');
         $noRawat = $this->decryptData($noRawat);
         $bangsal = "";
+
+        // Cek Restriksi Obat BPJS — hard-block jika total jml melebihi max_jml
+        $reg = DB::table('reg_periksa')->where('no_rawat', $noRawat)->first();
+        if ($reg) {
+            $totalPerObat = [];
+            for ($i = 0; $i < count($resObat); $i++) {
+                $kodeBrng = $resObat[$i];
+                $jml      = (float) ($resJml[$i] ?? 0);
+                if (empty($kodeBrng) || $jml <= 0) continue;
+                $totalPerObat[$kodeBrng] = ($totalPerObat[$kodeBrng] ?? 0) + $jml;
+            }
+            $pelanggaran = [];
+            foreach ($totalPerObat as $kodeBrng => $total) {
+                $row = $this->cariRestriksi($kodeBrng, $reg->kd_pj);
+                if ($row && $row->max_jml > 0 && $total > $row->max_jml) {
+                    $nama = DB::table('databarang')->where('kode_brng', $kodeBrng)->value('nama_brng') ?: $kodeBrng;
+                    $pelanggaran[] = "- {$nama} : diminta " . (int)$total . ", maksimal " . (int)$row->max_jml;
+                }
+            }
+            if (!empty($pelanggaran)) {
+                return response()->json([
+                    'status' => 'gagal',
+                    'pesan'  => "RESTRIKSI OBAT BPJS DILANGGAR — resep tidak dapat disimpan:\n\n"
+                              . implode("\n", $pelanggaran)
+                              . "\n\nSilakan kurangi jumlah obat sesuai batas restriksi.",
+                ]);
+            }
+        }
 
         DB::beginTransaction();
         try {
@@ -230,6 +302,33 @@ class ResepController extends Controller
             ]);
         }
 
+        // Cek Restriksi Obat BPJS — hard-block
+        $reg = DB::table('reg_periksa')->where('no_rawat', $noRawat)->first();
+        if ($reg) {
+            $totalPerObat = [];
+            for ($i = 0; $i < count($resObat); $i++) {
+                $kodeBrng = $resObat[$i];
+                $jml      = (float) ($resJml[$i] ?? 0);
+                if (empty($kodeBrng) || $jml <= 0) continue;
+                $totalPerObat[$kodeBrng] = ($totalPerObat[$kodeBrng] ?? 0) + $jml;
+            }
+            $pelanggaran = [];
+            foreach ($totalPerObat as $kodeBrng => $total) {
+                $row = $this->cariRestriksi($kodeBrng, $reg->kd_pj);
+                if ($row && $row->max_jml > 0 && $total > $row->max_jml) {
+                    $nama = DB::table('databarang')->where('kode_brng', $kodeBrng)->value('nama_brng') ?: $kodeBrng;
+                    $pelanggaran[] = "- {$nama} : diminta " . (int)$total . ", maksimal " . (int)$row->max_jml;
+                }
+            }
+            if (!empty($pelanggaran)) {
+                return response()->json([
+                    'status' => 'gagal',
+                    'pesan'  => "RESTRIKSI OBAT BPJS DILANGGAR — resep tidak dapat disimpan:\n\n"
+                              . implode("\n", $pelanggaran)
+                              . "\n\nSilakan kurangi jumlah obat sesuai batas restriksi.",
+                ]);
+            }
+        }
 
         try {
             DB::beginTransaction();
@@ -474,9 +573,33 @@ class ResepController extends Controller
             'jml.*.required' => 'Jumlah tidak boleh kosong',
         ]);
 
-        // if($validate){
-        //     return response()->json(['status'=>'gagal', 'message'=>'Data tidak boleh kosong', 'data' => $input]);
-        // }
+        // Cek Restriksi Obat BPJS (per komponen racikan × jumlah racikan) — hard-block
+        $reg = DB::table('reg_periksa')->where('no_rawat', $no_rawat)->first();
+        if ($reg) {
+            $totalPerObat = [];
+            for ($i = 0; $i < count($kdObat); $i++) {
+                $kb  = $kdObat[$i];
+                $qty = (float) ($jml[$i] ?? 0) * (float) $jumlahRacikan;
+                if (empty($kb) || $qty <= 0) continue;
+                $totalPerObat[$kb] = ($totalPerObat[$kb] ?? 0) + $qty;
+            }
+            $pelanggaran = [];
+            foreach ($totalPerObat as $kb => $total) {
+                $row = $this->cariRestriksi($kb, $reg->kd_pj);
+                if ($row && $row->max_jml > 0 && $total > $row->max_jml) {
+                    $nama = DB::table('databarang')->where('kode_brng', $kb)->value('nama_brng') ?: $kb;
+                    $pelanggaran[] = "- {$nama} : diminta " . (int)$total . ", maksimal " . (int)$row->max_jml;
+                }
+            }
+            if (!empty($pelanggaran)) {
+                return response()->json([
+                    'status' => 'gagal',
+                    'pesan'  => "RESTRIKSI OBAT BPJS DILANGGAR — racikan tidak dapat disimpan:\n\n"
+                              . implode("\n", $pelanggaran)
+                              . "\n\nSilakan kurangi jumlah obat sesuai batas restriksi.",
+                ]);
+            }
+        }
 
         try {
             DB::beginTransaction();
@@ -676,9 +799,33 @@ class ResepController extends Controller
             'jml.*' => 'required',
         ]);
 
-        // if($validate){
-        //     return response()->json(['status'=>'gagal', 'message'=>'Data tidak boleh kosong', 'data' => $input]);
-        // }
+        // Cek Restriksi Obat BPJS (racikan ranap) — hard-block
+        $reg = DB::table('reg_periksa')->where('no_rawat', $no_rawat)->first();
+        if ($reg) {
+            $totalPerObat = [];
+            for ($i = 0; $i < count($kdObat); $i++) {
+                $kb  = $kdObat[$i];
+                $qty = (float) ($jml[$i] ?? 0) * (float) $jumlahRacikan;
+                if (empty($kb) || $qty <= 0) continue;
+                $totalPerObat[$kb] = ($totalPerObat[$kb] ?? 0) + $qty;
+            }
+            $pelanggaran = [];
+            foreach ($totalPerObat as $kb => $total) {
+                $row = $this->cariRestriksi($kb, $reg->kd_pj);
+                if ($row && $row->max_jml > 0 && $total > $row->max_jml) {
+                    $nama = DB::table('databarang')->where('kode_brng', $kb)->value('nama_brng') ?: $kb;
+                    $pelanggaran[] = "- {$nama} : diminta " . (int)$total . ", maksimal " . (int)$row->max_jml;
+                }
+            }
+            if (!empty($pelanggaran)) {
+                return response()->json([
+                    'status' => 'gagal',
+                    'pesan'  => "RESTRIKSI OBAT BPJS DILANGGAR — racikan tidak dapat disimpan:\n\n"
+                              . implode("\n", $pelanggaran)
+                              . "\n\nSilakan kurangi jumlah obat sesuai batas restriksi.",
+                ]);
+            }
+        }
 
         try {
             DB::beginTransaction();

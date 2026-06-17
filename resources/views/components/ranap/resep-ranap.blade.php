@@ -510,6 +510,54 @@
             $(this).closest('.row').remove();
         })
 
+        // ===== Restriksi Obat BPJS (Ranap) =====
+        function renderRestriksi($row, data) {
+            var $jml = $row.find('input[name="jumlah[]"]');
+            var $warn = $row.find('.restriksi-warn');
+            if ($warn.length === 0) {
+                $warn = $('<div class="restriksi-warn col-md-12 mb-2"></div>');
+                $row.append($warn);
+            }
+            if (!data) {
+                $warn.html('').hide();
+                $jml.removeAttr('data-max').removeAttr('data-violated')
+                    .css({'border-color':'', 'background-color':''});
+                return;
+            }
+            $jml.attr('data-max', data.max_jml);
+            var text = '⚠ Restriksi: ' + (data.keterangan || '') + ' &mdash; Maks <b>' + data.max_jml + '</b>';
+            $warn.html('<div class="alert alert-warning py-1 mb-1 small">' + text + '</div>').show();
+            checkRestriksi($jml);
+        }
+        function checkRestriksi($jml) {
+            var max = parseFloat($jml.attr('data-max'));
+            var $row = $jml.closest('.row');
+            var $warn = $row.find('.restriksi-warn .alert');
+            if (isNaN(max)) return;
+            var val = parseFloat($jml.val() || 0);
+            if (val > max) {
+                $jml.attr('data-violated', 'true')
+                    .css({'border-color':'#dc3545', 'background-color':'#fde2e2'});
+                $warn.removeClass('alert-warning').addClass('alert-danger');
+            } else {
+                $jml.removeAttr('data-violated')
+                    .css({'border-color':'', 'background-color':''});
+                $warn.removeClass('alert-danger').addClass('alert-warning');
+            }
+        }
+        $(wrapper).on('change', 'select[name="obat[]"]', function() {
+            var $sel = $(this);
+            var $row = $sel.closest('.row');
+            var kode = $sel.val();
+            if (!kode) { renderRestriksi($row, null); return; }
+            $.getJSON('/api/obat/restriksi/' + encodeURIComponent(kode) + '/' + "{{$encryptNoRawat}}", function(data) {
+                renderRestriksi($row, data);
+            }).fail(function() { renderRestriksi($row, null); });
+        });
+        $(wrapper).on('input', 'input[name="jumlah[]"]', function() {
+            checkRestriksi($(this));
+        });
+
         $('.obat').select2({
             placeholder: 'Pilih obat',
             ajax: {
@@ -819,6 +867,23 @@
 
         $("#resepButton").click(function(e) {
             e.preventDefault();
+            // Block jika ada pelanggaran restriksi obat
+            var $viol = $('#resepForm input[name="jumlah[]"][data-violated="true"]');
+            if ($viol.length > 0) {
+                var pesan = '';
+                $viol.each(function() {
+                    var $row = $(this).closest('.row');
+                    var nama = $row.find('select[name="obat[]"] option:selected').text() || 'Obat';
+                    pesan += '- ' + nama + ' : diminta ' + $(this).val() + ', maksimal ' + $(this).attr('data-max') + '\n';
+                });
+                Swal.fire({
+                    title: 'Restriksi Obat BPJS Dilanggar',
+                    text: 'Resep tidak dapat disimpan:\n\n' + pesan + '\nSilakan kurangi jumlah obat sesuai batas restriksi.',
+                    icon: 'error',
+                    confirmButtonText: 'Ok'
+                });
+                return;
+            }
             let _token   = $('meta[name="csrf-token"]').attr('content');
             let obat = getValue('obat[]');
             let jumlah = getValue('jumlah[]');
