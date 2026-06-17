@@ -1,6 +1,16 @@
 <div>
     <x-adminlte-modal wire:ignore.self id="modalRiwayatPemeriksaanRalan" title="Riwayat Pemeriksaan" size="xl" theme="info" v-centered
         static-backdrop scrollable>
+
+        <x-adminlte-card theme="dark" title="Gambar Radiologi (PACS Orthanc)" collapsible="collapsed" maximizable>
+            <div data-orthanc-gallery data-no-rm="{{ $no_rm }}">
+                <div class="d-flex align-items-center">
+                    <i class="fas fa-spinner fa-spin mr-2"></i>
+                    <span>Memuat gambar dari PACS Orthanc untuk No.RM {{ $no_rm }} ...</span>
+                </div>
+            </div>
+        </x-adminlte-card>
+
         <div class="timeline">
             @foreach($data as $row)
             @php
@@ -363,6 +373,87 @@
         $(document).on('click', '[data-toggle="lightbox"]', function(event) {
                 event.preventDefault();
                 $(this).ekkoLightbox();
+        });
+
+        function formatStudyDate(d) {
+            if (!d || d.length < 8) return d || '-';
+            return d.slice(6,8) + '-' + d.slice(4,6) + '-' + d.slice(0,4);
+        }
+
+        function loadOrthancGallery($container) {
+            if ($container.data('loaded')) return;
+            $container.data('loaded', true);
+            var noRm = $container.data('no-rm');
+            if (!noRm) { $container.html('<em>No.RM tidak tersedia.</em>'); return; }
+            $.getJSON('/api/orthanc/studies/' + encodeURIComponent(noRm))
+                .done(function(res) {
+                    if (!res.configured) {
+                        $container.html('<em class="text-muted">PACS Orthanc belum dikonfigurasi (ORTHANC_URL di .env).</em>');
+                        return;
+                    }
+                    if (!res.studies || res.studies.length === 0) {
+                        $container.html('<em class="text-muted">Belum ada study di Orthanc untuk No.RM ' + noRm + '.</em>');
+                        return;
+                    }
+                    var html = '';
+                    res.studies.forEach(function(study) {
+                        html += '<div class="mb-3 p-2 border rounded">';
+                        html += '<div class="d-flex justify-content-between align-items-center">';
+                        html += '<div><b>' + formatStudyDate(study.study_date) + '</b> <span class="text-muted">' + (study.accession || '') + '</span></div>';
+                        html += '<button type="button" class="btn btn-sm btn-outline-success" data-orthanc-archive="' + study.id + '"><i class="fas fa-save mr-1"></i>Arsipkan Study</button>';
+                        html += '</div>';
+                        html += '<div class="text-muted small mb-2">' + (study.description || '-') + '</div>';
+                        study.series.forEach(function(s) {
+                            html += '<div class="mb-2"><span class="badge badge-secondary mr-1">' + (s.modality || '-') + '</span>';
+                            html += '<span class="small">' + (s.description || '') + '</span></div>';
+                            html += '<div class="d-flex flex-wrap" style="gap:6px">';
+                            s.instances.forEach(function(iid) {
+                                var preview = '/api/orthanc/preview/' + iid;
+                                var dcm = '/api/orthanc/dicom/' + iid;
+                                html += '<div class="text-center">';
+                                html += '<a href="' + preview + '" data-toggle="lightbox" data-gallery="orthanc-' + study.id + '">';
+                                html += '<img src="' + preview + '" loading="lazy" style="width:140px;height:140px;object-fit:cover;background:#000" />';
+                                html += '</a>';
+                                html += '<div><a class="small" href="' + dcm + '" download><i class="fas fa-download"></i> DICOM</a></div>';
+                                html += '</div>';
+                            });
+                            html += '</div>';
+                        });
+                        html += '</div>';
+                    });
+                    $container.html(html);
+                })
+                .fail(function() {
+                    $container.html('<em class="text-danger">Gagal memuat data dari Orthanc.</em>');
+                });
+        }
+
+        $(document).on('shown.bs.modal', '#modalRiwayatPemeriksaanRalan', function() {
+            $(this).find('[data-orthanc-gallery]').each(function() {
+                loadOrthancGallery($(this));
+            });
+        });
+
+        $(document).on('click', '[data-orthanc-archive]', function() {
+            var $btn = $(this);
+            var studyId = $btn.data('orthanc-archive');
+            $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-1"></i>Mengarsipkan...');
+            $.ajax({
+                url: '/api/orthanc/archive/' + studyId,
+                type: 'POST',
+                headers: { 'Accept': 'application/json' }
+            }).done(function(res) {
+                if (res.ok) {
+                    $btn.removeClass('btn-outline-success').addClass('btn-success')
+                        .html('<i class="fas fa-check mr-1"></i>Terarsip (' + res.instances + ' instance)');
+                } else {
+                    $btn.prop('disabled', false).removeClass('btn-outline-success').addClass('btn-warning')
+                        .html('<i class="fas fa-exclamation mr-1"></i>Gagal, ulangi');
+                }
+            }).fail(function() {
+                $btn.prop('disabled', false).removeClass('btn-outline-success').addClass('btn-danger')
+                    .html('<i class="fas fa-times mr-1"></i>Gagal');
+            });
         });
 </script>
 @endpush

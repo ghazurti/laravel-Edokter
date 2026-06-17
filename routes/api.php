@@ -6,6 +6,7 @@ use App\Http\Controllers\API\ResepController;
 use App\Http\Controllers\API\LabController;
 use App\Http\Controllers\API\PemeriksaanController;
 use App\Http\Controllers\API\RadiologiController;
+use App\Http\Controllers\API\OrthancController;
 use App\Http\Controllers\API\ResumePasienController;
 use App\Http\Controllers\API\RiwayatController;
 use App\Http\Livewire\Ralan\Resep;
@@ -42,10 +43,16 @@ Route::post('/permintaanrad/{noRawat}', [RadiologiController::class, 'postPermin
 Route::post('/hapus/permintaanrad/{noOrder}', [RadiologiController::class, 'hapusPermintaanRadiologi']);
 Route::get('/jns_perawatan_rad', [RadiologiController::class, 'getPerawatanRadiologi']);
 
+Route::get('/orthanc/studies/{noRm}', [OrthancController::class, 'studies'])->where('noRm', '[0-9A-Za-z.\-_]+');
+Route::get('/orthanc/preview/{instanceId}', [OrthancController::class, 'preview'])->where('instanceId', '[a-f0-9-]+');
+Route::get('/orthanc/dicom/{instanceId}', [OrthancController::class, 'dicom'])->where('instanceId', '[a-f0-9-]+');
+Route::post('/orthanc/archive/{studyId}', [OrthancController::class, 'archiveStudy'])->where('studyId', '[a-f0-9-]+');
+
 Route::post('/resumemedis/{noRawat}', [ResumePasienController::class, 'postResume']);
 Route::get('/hasil/kel/{noRawat}', [ResumePasienController::class, 'getKeluhanUtama']);
 
 Route::get('/obat/{kdObat}', [ResepController::class, 'getDataObat']);
+Route::get('/obat/restriksi/{kodeObat}/{noRawat}', [ResepController::class, 'getRestriksiObat']);
 Route::get('/jns_perawatan_lab', [LabController::class, 'getPerawatanLab']);
 Route::post('/resep/iterasi/{noRawat}', [ResepController::class, 'postResepIterasi']);
 Route::delete('/resep/iterasi/{noResep}', [ResepController::class, 'hapusResepIterasi']);

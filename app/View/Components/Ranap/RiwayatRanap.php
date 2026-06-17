@@ -9,6 +9,7 @@ class RiwayatRanap extends Component
 {
     public $data;
     public $heads;
+    public $noRM;
     /**
      * Create a new component instance.
      *
@@ -17,8 +18,9 @@ class RiwayatRanap extends Component
     public function __construct($noRawat)
     {
         $pasien = $this->getPasien($noRawat);
+        $this->noRM = $pasien->no_rkm_medis ?? '';
         $this->data = $this->getRiwayatPemeriksaan($pasien->no_rkm_medis);
-        $this->heads = ['No. Rawat', 'Dokter', 'Keluhan', 'Diagnosa'];                        
+        $this->heads = ['No. Rawat', 'Dokter', 'Keluhan', 'Diagnosa'];
     }
 
     /**
@@ -28,7 +30,7 @@ class RiwayatRanap extends Component
      */
     public function render()
     {
-        return view('components.ranap.riwayat-ranap',['data' => $this->data, 'heads' => $this->heads]);
+        return view('components.ranap.riwayat-ranap',['data' => $this->data, 'heads' => $this->heads, 'no_rm' => $this->noRM]);
     }
 
     public function getPasien($noRawat)
