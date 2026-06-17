@@ -164,14 +164,68 @@ Sama konsepnya, mount SMB share dari Khanza ke container.
 ### Opsi C: Local-only (paling sederhana)
 Biarkan `BERKAS_UPLOAD_PATH=` kosong. File disimpan di volume `./public/webapps` Laravel container. File hanya bisa diakses via Laravel, tidak tampil di Khanza desktop.
 
-## 8. Update & Maintenance
+## 8. Bridging PACS Orthanc (Radiologi)
+
+Set di `.env`:
+```env
+ORTHANC_URL=http://IP-PACS-ORTHANC
+ORTHANC_PORT=8042
+ORTHANC_USER=...
+ORTHANC_PASS=...
+# Folder arsip JPG hasil PACS (mount volume kalau pakai Docker, supaya tidak hilang saat rebuild)
+ORTHANC_ARCHIVE_PATH=/var/orthanc-archive
+```
+
+Kalau mau persist arsip JPG, tambahkan volume mount di `docker-compose.yml`:
+```yaml
+volumes:
+  - ./orthanc-archive:/var/orthanc-archive
+```
+
+Asumsi: `PatientID` di Orthanc = `no_rkm_medis` Khanza (sama persis dengan pola bridging Khanza desktop).
+Credential Orthanc TIDAK pernah kirim ke browser — semua request diproxy via Laravel.
+
+## 9. BPJS I-Care / VClaim
+
+```env
+BPJS_CONS_ID=<cons-id-faskes>
+BPJS_CONS_PWD=<secret-key>
+BPJS_USER_KEY=<user-key>
+BPJS_BASE_URL=https://apijkn.bpjs-kesehatan.go.id/vclaim-rest
+# I-Care WAJIB lengkap sampai "/api/rs" (TANPA trailing slash)
+BPJS_ICARE_BASE_URL=https://apijkn.bpjs-kesehatan.go.id/wsihs/api/rs
+# Kosongkan kalau user_key Vclaim = user_key I-Care (umum di banyak RS)
+BPJS_ICARE_USER_KEY=
+```
+
+Mapping dokter: pastikan tabel `maping_dokter_dpjpvclaim` di Khanza sudah berisi `kd_dokter_bpjs`
+untuk setiap dokter yang akan pakai I-Care. Tanpa mapping, BPJS akan reject.
+
+## 10. Update & Maintenance
+
+**WAJIB urutan ini setiap kali ada `git pull`:**
 
 ```bash
 cd /www/wwwroot/edokter
 git pull
+docker compose exec edokter composer install --no-dev --optimize-autoloader
+docker compose exec edokter rm -f bootstrap/cache/config.php
+docker compose exec edokter php artisan config:clear
+docker compose exec edokter php artisan cache:clear
+docker compose exec edokter php artisan view:clear
+docker compose exec edokter php artisan migrate --force   # kalau ada migration
+docker compose restart edokter
+```
+
+**Kalau ada perubahan Dockerfile / package PHP baru:**
+```bash
+docker compose down
 docker compose up -d --build
-docker compose exec edokter php artisan migrate --force  # kalau ada migration
-docker compose exec edokter php artisan config:cache
+```
+
+**Kalau perlu cek vendor package tertentu sudah ter-install:**
+```bash
+docker compose exec edokter test -f vendor/<vendor>/<package>/composer.json && echo OK || echo MISSING
 ```
 
 ## Troubleshooting
@@ -182,8 +236,16 @@ docker compose exec edokter php artisan config:cache
 | `Permission denied` di storage/ | `docker compose exec edokter chown -R www-data:www-data storage` |
 | Upload berkas 413 Request Entity Too Large | Naikkan `client_max_body_size` di `docker/nginx.conf` + `upload_max_filesize` di PHP |
 | Halaman blank / 500 | `docker compose logs edokter`, dan `docker compose exec edokter cat storage/logs/laravel.log` |
-| `config()` lama setelah ubah .env | `docker compose exec edokter php artisan config:clear && config:cache` |
+| `config()` lama setelah ubah .env | `docker compose exec edokter rm -f bootstrap/cache/config.php && php artisan config:clear` + restart |
 | Timezone salah | Pastikan `APP_TIMEZONE=Asia/Makassar` di .env + restart container |
+| **I-Care 404 / `Could not resolve host: validate`** | Config cache stale. Hapus `bootstrap/cache/config.php` + `config:clear` + restart |
+| **I-Care `Class "LZCompressor\LZString" not found`** | `composer install --no-dev` belum jalan setelah git pull. Lihat section 10 |
+| **I-Care 404 `No Mapping Rule matched`** | `BPJS_ICARE_BASE_URL` di .env salah path. Harus lengkap sampai `/api/rs` tanpa trailing slash |
+| **I-Care: pop-up "Dokter belum di-mapping"** | Tambahkan record di tabel `maping_dokter_dpjpvclaim` di Khanza dengan `kd_dokter_bpjs` valid |
+| **I-Care: error "Named Pipes Provider, error: 40"** | Bukan dari kita — SQL Server di sisi BPJS yang error. Tunggu/lapor BPJS. Coba juga di Khanza desktop |
+| **Orthanc: gambar tidak muncul, log "Connection refused"** | Container Laravel tidak bisa reach IP Orthanc. Cek firewall + `ORTHANC_URL` di .env |
+| **Orthanc: gambar muncul lalu hilang setelah rebuild container** | `ORTHANC_ARCHIVE_PATH` belum di-mount sebagai volume. Lihat section 8 |
+| `LOG_LEVEL=warning` di .env | Wajar log `[ICare] Request/Response` info tidak muncul. Ganti ke `debug` saat troubleshooting, lalu balikkan |
 
 ## Backup
 
