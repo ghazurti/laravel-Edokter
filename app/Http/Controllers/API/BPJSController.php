@@ -29,11 +29,11 @@ class BPJSController extends Controller
         $data['kodedokter'] = intval($dokter->kd_dokter_bpjs);
 
         \Log::info('[ICare] Request', [
-            'url'  => env('BPJS_ICARE_BASE_URL') . 'api/rs/validate',
+            'url'  => rtrim(env('BPJS_ICARE_BASE_URL'), '/') . '/validate',
             'body' => $data,
         ]);
 
-        $response = $this->requestPostBpjs('api/rs/validate', $data);
+        $response = $this->requestPostBpjs('validate', $data);
         \Log::info('[ICare] Response', ['body' => $response->getContent()]);
         return $response;
     }
